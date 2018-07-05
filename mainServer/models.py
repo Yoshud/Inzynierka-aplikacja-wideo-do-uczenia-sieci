@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils import timezone
-from datetime import time
 
 class Status(models.Model):
     status = models.CharField("status", max_length=100)
@@ -37,14 +36,16 @@ class Klatka(models.Model):
 
 
 class Film(models.Model):
+    sciezka = models.TextField(default="", blank=True, null=True)
     nazwa = models.CharField("nazwa", max_length=80, default="", blank=True, null=True)
     FPS = models.FloatField("fps", default=0.0)
     dlugosc = models.TimeField("dlugosc", blank=True, null=True)
     rozmiarX = models.IntegerField("x", default=0)
     rozmiarY = models.IntegerField("y", default=0)
     iloscKlatek = models.IntegerField("iloscKlatek", blank=True, null=True)
-    folder = models.ForeignKey("FolderFilmy", on_delete=models.CASCADE)
+    # folder = models.ForeignKey("FolderFilmy", on_delete=models.CASCADE)
     status = models.ManyToManyField("StatusFilmu", blank=True, null=True)
+    sesja = models.ForeignKey("Sesja", on_delete=models.CASCADE)
 
 
 class FolderFilmy(Folder):
@@ -124,4 +125,5 @@ class WynikPrzetwarzania(models.Model):
 
 class Sesja(models.Model):
     folderZObrazami = models.OneToOneField("FolderZObrazami", on_delete=models.CASCADE)
-    filmy = models.ManyToManyField("Film", blank=True, null=True)
+    filmyPrzetworzone = models.ManyToManyField("Film", blank=True, null=True)
+    filmyUzytkownik = models.ManyToManyField("Film", blank=True, null=True)
