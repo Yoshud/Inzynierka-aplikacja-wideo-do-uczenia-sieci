@@ -5,4 +5,5 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('getObjectsFromPath', views.getObjectsFromPathView, name='getObjectsFromPath'),
+    path('addMovie', views.addMovieView, name='addMovie'),
 ]

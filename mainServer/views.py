@@ -6,3 +6,4 @@ def index(request):
     return HttpResponse("Hello, world. You're at the polls index.")
 
 getObjectsFromPathView = etap1.GetObjectsFromPath.as_view()
+addMovieView = etap1.AddMovie.as_view()

@@ -8,7 +8,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import Http404
-
+import cv2
+import datetime
+from django.utils import timezone
 
 def validateReturnForPath(folders):
     if folders == None:
@@ -47,4 +49,23 @@ class GetObjectsFromPath(View):
             "currentDir": path,
             "folders": folders,
             "files": files,
+        })
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddMovie(View):
+    def get(self, request, **kwargs):
+        path = request.GET.get('path', 'lastPath')
+        cap = cv2.VideoCapture(path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        iloscKlatek = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        dlugosc = iloscKlatek/fps
+        dlugosc = datetime.timedelta(seconds=dlugosc)
+        x = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        return JsonResponse({
+            "fps": fps,
+            "iloscKlatek": int(iloscKlatek),
+            "dlugosc": str(dlugosc),
+            "x": int(x),
+            "y": int(y),
         })
