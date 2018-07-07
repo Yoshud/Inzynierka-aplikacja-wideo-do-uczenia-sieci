@@ -119,3 +119,4 @@ class Sesja(models.Model):
     filmyUzytkownik = models.ManyToManyField("Film", related_name="sesjaUzytkownika", blank=True)
     data = models.DateTimeField(default=timezone.now)
     nazwa = models.TextField(default="Nienazwana_{}__{}".format(id, timezone.now()))
+    ostatniaAktualizacja = models.DateTimeField(default=timezone.now)
