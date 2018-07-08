@@ -22,7 +22,7 @@ def foldersAndFilesFromPath(path):
 
 
 def pathUp(path):
-    return os.path.dirname(os.path.dirname(path))
+    return os.path.dirname(path)
 
 
 def currentPath():
@@ -31,37 +31,20 @@ def currentPath():
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GetObjectsFromPath(View):
-
-    def getRememberedPath(self, request):
-        path = request.session.get('pathGlobal', currentPath())
-        request.session['pathGlobal'] = path
-        return path
-
-    def addToPath(self, toAdd, request):
-        return os.path.join(self.getRememberedPath(request), toAdd)
-
     def get(self, request, **kwargs):
-        path = request.GET.get('path', 'lastPath')
-        pathGlobal = self.getRememberedPath(request)
-        path = pathGlobal if path == 'lastPath' else path
+        path = request.GET.get('path', None)
+        parent = request.GET.get('parent', None)
+        child = request.GET.get('child', '')
+        if path==None:
+            raise Http404
+        if parent != None:
+            path = pathUp(path)
+        else:
+            if child != '':
+                path = os.path.join(path, child)
         folders, files = foldersAndFilesFromPath(path)
         return JsonResponse({
-            "currentDir": pathGlobal,
-            "folders": folders,
-            "files": files,
-        })
-
-    def post(self, request, **kwargs):
-        next = request.POST.get("next", "pathUp")
-        pathGlobal = self.getRememberedPath(request)
-        request.session['pathGlobal'] = pathUp(pathGlobal) if next == "pathUp" else self.addToPath(next, request)
-        try:
-            folders, files = foldersAndFilesFromPath(request.session['pathGlobal'])
-        except Http404:
-            request.session['pathGlobal'] = pathGlobal
-            raise Http404
-        return JsonResponse({
-            "currentDir": request.session['pathGlobal'],
+            "currentDir": path,
             "folders": folders,
             "files": files,
         })
