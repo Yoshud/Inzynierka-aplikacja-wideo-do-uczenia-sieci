@@ -10,16 +10,24 @@ from django.utils.decorators import method_decorator
 from django.http import Http404
 import cv2
 import datetime
+from mainServer.models import *
 from django.utils import timezone
+
+
+def filterFilms(files):
+    filmSufixes = [".mp4", ".avi", ".mpeg", ".mpg", ".h264"]
+    return list(filter(lambda file: any([sufix in file for sufix in filmSufixes]), files))
+
 
 def validateReturnForPath(folders):
     if folders == None:
         raise Http404
 
 
-def foldersAndFilesFromPath(path):
+def foldersAndMovieFilesFromPath(path):
     _, foldernames, filenames = next(walk(path), (None, None, []))
     validateReturnForPath(foldernames)
+    filenames = filterFilms(filenames)
     return foldernames, filenames
 
 
@@ -37,28 +45,31 @@ class GetObjectsFromPath(View):
         path = request.GET.get('path', None)
         parent = request.GET.get('parent', None)
         child = request.GET.get('child', '')
-        if path==None:
+        if path == None:
             raise Http404
         if parent != None:
             path = pathUp(path)
         else:
             if child != '':
                 path = os.path.join(path, child)
-        folders, files = foldersAndFilesFromPath(path)
+        folders, files = foldersAndMovieFilesFromPath(path)
         return JsonResponse({
             "currentDir": path,
             "folders": folders,
             "files": files,
         })
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class AddMovie(View):
     def get(self, request, **kwargs):
-        path = request.GET.get('path', 'lastPath')
+        path = request.GET.get('path', '')
         cap = cv2.VideoCapture(path)
+        if cap is None or not cap.isOpened():
+            raise Http404
         fps = cap.get(cv2.CAP_PROP_FPS)
         iloscKlatek = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-        dlugosc = iloscKlatek/fps
+        dlugosc = iloscKlatek / fps
         dlugosc = datetime.timedelta(seconds=dlugosc)
         x = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -68,4 +79,57 @@ class AddMovie(View):
             "dlugosc": str(dlugosc),
             "x": int(x),
             "y": int(y),
+        })
+
+    def addMovie(self, sessionPK, path):
+        cap = cv2.VideoCapture(path)
+        if cap is None or not cap.isOpened():
+            raise Http404
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        iloscKlatek = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        dlugosc = iloscKlatek / fps
+        dlugosc = datetime.timedelta(seconds=dlugosc)
+        x = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+        statusTags = ["Do przetworzenia", "Aktywny"]
+        statuses = [StatusFilmu.objects.get(status=tag) for tag in statusTags]
+        film = Film(
+            sciezka=path,
+            nazwa=os.path.basename(path),
+            FPS=fps,
+            iloscKlatek=int(iloscKlatek),
+            rozmiarX=int(x),
+            rozmiarY=int(y),
+            dlugosc=str(dlugosc),
+            sesja=Sesja.objects.get(pk=sessionPK),
+        )
+        film.save()
+        for status in statuses:
+            film.status.add(status)
+
+    def addFolder(self, sessionPK, path):
+        folders, files = foldersAndMovieFilesFromPath(path)
+        for file in files:
+            self.addMovie(sessionPK, os.path.join(path, file))
+
+    def post(self, request, **kwargs):
+        path = request.POST.get('path', '')
+        files = request.POST.getlist('files')
+        folders = request.POST.getlist('folders')
+        sessionName = request.POST.get('sessionName', 'autoName')
+        sessionPath = request.POST.get('toFolderPath', '')
+        sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
+            if sessionPath == '' else sessionPath
+        imageFolder = FolderZObrazami(sciezka=sessionPath)
+        imageFolder.save()
+        session = Sesja(nazwa=sessionName, folderZObrazami=imageFolder)
+        session.save()
+
+        for file in files:
+            self.addMovie(session.pk, os.path.join(path, file))
+        for folder in folders:
+            self.addFolder(session.pk, os.path.join(path, folder))
+        return JsonResponse({
+            'sessionId': session.pk
         })
