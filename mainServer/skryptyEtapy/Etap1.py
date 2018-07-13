@@ -12,6 +12,7 @@ import cv2
 import datetime
 from mainServer.models import *
 from django.utils import timezone
+import json
 
 
 def filterFilms(files):
@@ -114,13 +115,14 @@ class AddMovie(View):
             self.addMovie(sessionPK, os.path.join(path, file))
 
     def post(self, request, **kwargs):
-        path = request.POST.get('path', '')
+        data = json.loads(request.read().decode('utf-8'))
+        path = data.get('path', '')
         if path == '':
             raise Http404
-        files = request.POST.getlist('files')
-        folders = request.POST.getlist('folders')
-        sessionName = request.POST.get('sessionName', 'autoName')
-        sessionPath = request.POST.get('toFolderPath', '')
+        files = data.get('files')
+        folders = data.get('folders')
+        sessionName = data.get('sessionName', 'autoName')
+        sessionPath = data.get('toFolderPath', '')
         sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
             if sessionPath == '' else sessionPath
         imageFolder = FolderZObrazami(sciezka=sessionPath)
@@ -128,10 +130,12 @@ class AddMovie(View):
         session = Sesja(nazwa=sessionName, folderZObrazami=imageFolder)
         session.save()
         request.session["sessionPk"] = session.pk
-        for file in files:
-            self.addMovie(session.pk, os.path.join(path, file))
-        for folder in folders:
-            self.addFolder(session.pk, os.path.join(path, folder))
+        if files:
+            for file in files:
+                self.addMovie(session.pk, os.path.join(path, file))
+        if folders:
+            for folder in folders:
+                self.addFolder(session.pk, os.path.join(path, folder))
         return JsonResponse({
             'sessionId': session.pk
         })

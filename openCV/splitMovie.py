@@ -3,7 +3,8 @@ import time
 import schedule
 import os
 import requests
-from openCV.main import process
+# from openCV.main import process
+from openCV.processFilm import process
 
 url = "http://localhost:8000/returnMoviesToProcess"
 urlResponse = "http://localhost:8000/movieProcessed"
@@ -37,8 +38,7 @@ def waitForMovies(data):
 def processMovies(data):
     for movie in data:
         print (movie["id"])
-        # processMovie(path=movie["path"], pathToSave=movie["pathToSave"])
-        process(path=movie["path"], pathToSave=movie["pathToSave"])
+        process(path=movie["path"], pathToSave=movie["pathToSave"], movieName=movie["movieName"] , movieId=movie["id"])
         sendingRequest(movie["id"])
     return waitForMovies, None
 
