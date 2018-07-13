@@ -115,6 +115,8 @@ class AddMovie(View):
 
     def post(self, request, **kwargs):
         path = request.POST.get('path', '')
+        if path == '':
+            raise Http404
         files = request.POST.getlist('files')
         folders = request.POST.getlist('folders')
         sessionName = request.POST.get('sessionName', 'autoName')
@@ -125,7 +127,7 @@ class AddMovie(View):
         imageFolder.save()
         session = Sesja(nazwa=sessionName, folderZObrazami=imageFolder)
         session.save()
-
+        request.session["sessionPk"] = session.pk
         for file in files:
             self.addMovie(session.pk, os.path.join(path, file))
         for folder in folders:
