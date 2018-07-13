@@ -1,8 +1,12 @@
 import cv2
 import time
 import os
+from pathlib import Path
 
 def process(path, pathToSave, movieName, movieId):
+    pathToCreate = Path(pathToSave)
+    pathToCreate.mkdir(parents=True, exist_ok=True)
+
     movieNameAndSufix = movieName.split('.')
     filePrefix = "{}_{}".format(movieNameAndSufix[0], movieId)
     movieSufix = movieNameAndSufix[1]
@@ -28,7 +32,6 @@ def process(path, pathToSave, movieName, movieId):
     print(len(frames))
 
     for it, frame1 in enumerate(frames):
-        # cv2.imshow("adam", frame1)
         # cv2.imwrite("{}_f{}.{}".format(pathToSave, it, fileSufix), frame1, cv2.IMWRITE_JPEG_RST_INTERVAL)
         fullPathToSave = "{}_f{}.{}".format(pathToSave, it, imageSufix)
         try:
