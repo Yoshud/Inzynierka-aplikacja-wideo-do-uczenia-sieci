@@ -8,4 +8,5 @@ urlpatterns = [
     path('addMovie', views.addMovieView, name='addMovie'),
     path('returnMoviesToProcess', views.returnMoviesToProcessView, name='returnMoviesToProcess'),
     path('movieProcessed', views.movieProcessedView, name='MovieProcessed'),
+    path('getNextMovie', views.getNextMovieView, name='getNextMovie'),
 ]

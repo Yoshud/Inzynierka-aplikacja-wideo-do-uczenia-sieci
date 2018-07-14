@@ -94,7 +94,7 @@ class AddMovie(View):
         y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
         statusTags = ["Do przetworzenia", "Aktywny"]
-        statuses = [StatusFilmu.objects.get(status=tag) for tag in statusTags]
+        statuses = [StatusFilmu.objects.get_or_create(status=tag) for tag in statusTags]
         film = Film(
             sciezka=path,
             nazwa=os.path.basename(path),
