@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import Http404, HttpResponseServerError
 from mainServer.models import *
+import json
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -17,30 +18,39 @@ class ReturnMoviesToProcess(View):
             "path": movie.sciezka,
             "movieName": movie.nazwa,
             "id": movie.pk,
-            "pathToSave": movie.sesja.folderZObrazami.sciezka
+            "pathToSave": movie.sesja.folderZObrazami.sciezka,
         }
+
     def post(self, request, **kwargs):
         movies = Film.objects \
-            .filter(status__status__in=["Do przetworzenia"])[:5]
+                     .filter(status__status__in=["Do przetworzenia"])[:5]
         moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
         return JsonResponse({
             "movies": moviesDict,
         })
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class MovieProcessed(View):
-    def addToProcessedMovies(self, movie,
+    def addToProcessedMovies(self, movie, frames,
                              statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
                              statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
+        for frameInfo in frames:
+            frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], data=frameInfo["date"], film=movie)
+            frame.save()
         print(movie.nazwa)
+
     def post(self, request, **kwargs):
-        id = request.POST.get("movieId")
-        if id == -1:
+        data = json.loads(request.read().decode('utf-8'))
+        movieId = data.get("movieId", False)
+        frames = data.get["frames", False]
+        # sessionId = request.POST.get("sessionId", False)
+        if any([movieId, frames]):
             raise Http404
         try:
-            self.addToProcessedMovies(Film.objects.get(pk=id))
+            self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
         except:
             raise HttpResponseServerError
         return JsonResponse({"ok": True})

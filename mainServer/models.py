@@ -26,6 +26,8 @@ class PozycjaPunktu(models.Model):
 class Klatka(models.Model):
     film = models.ForeignKey("Film", related_name="film", on_delete=models.CASCADE)
     nr = models.IntegerField(default=0)
+    sciezka = models.TextField(default="")
+    data = models.DateTimeField(default=timezone.now)
 
 
 class Film(models.Model):
@@ -45,19 +47,19 @@ class FolderZObrazami(models.Model):
     sciezka = models.TextField(default="")
 
 
-class Obraz(models.Model):
-    klatka = models.OneToOneField("Klatka", blank=True, null=True, on_delete=models.CASCADE)
-    folder = models.ForeignKey("FolderZObrazami", on_delete=models.CASCADE)
-    nazwa = models.CharField("nazwa", max_length=80, default="")
-    data = models.DateTimeField(default=timezone.now)
+# class Obraz(models.Model):
+#     klatka = models.OneToOneField("Klatka", blank=True, null=True, on_delete=models.CASCADE)
+#     # folder = models.ForeignKey("FolderZObrazami", on_delete=models.CASCADE)
+#     nazwa = models.CharField("nazwa", max_length=80, default="")
+#     data = models.DateTimeField(default=timezone.now)
 
 # Konieć CZ1:
 
 class ZbioryDanych(models.Model):
     sesja = models.ForeignKey("Sesja", on_delete=models.CASCADE)
-    uczacy = models.ManyToManyField("Obraz", related_name="zbioryUczacy")
-    walidacyjny = models.ManyToManyField("Obraz", related_name="zbioryWalidacyjny", blank=True)
-    testowy = models.ManyToManyField("Obraz", related_name="zbioryTestowy", blank=True)
+    uczacy = models.ManyToManyField("Klatka", related_name="zbioryUczacy")
+    walidacyjny = models.ManyToManyField("Klatka", related_name="zbioryWalidacyjny", blank=True)
+    testowy = models.ManyToManyField("Klatka", related_name="zbioryTestowy", blank=True)
 
 
 class Sieci(models.Model):
@@ -114,9 +116,8 @@ class WynikPrzetwarzania(models.Model):
 
 class Sesja(models.Model):
     folderZObrazami = models.OneToOneField("FolderZObrazami", on_delete=models.CASCADE)
-    id = models.AutoField(primary_key=True)
     filmyPrzetworzone = models.ManyToManyField("Film", related_name="sesjaPrzetworzone", blank=True)
     filmyUzytkownik = models.ManyToManyField("Film", related_name="sesjaUzytkownika", blank=True)
     data = models.DateTimeField(default=timezone.now)
-    nazwa = models.TextField(default="Nienazwana_{}__{}".format(id, timezone.now()))
+    nazwa = models.TextField(default="Nienazwana_{}".format(timezone.now()))
     ostatniaAktualizacja = models.DateTimeField(default=timezone.now)

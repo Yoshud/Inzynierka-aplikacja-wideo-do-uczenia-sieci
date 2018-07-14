@@ -1,20 +1,20 @@
-import cv2
 import time
-import schedule
 import os
 import requests
 # from openCV.main import process
 from openCV.processFilm import process
+import json
 
 url = "http://localhost:8000/returnMoviesToProcess"
 urlResponse = "http://localhost:8000/movieProcessed"
 
 
-def sendingRequest(id):
+def sendingRequest(movieId, frames):
     payload = {
-        "movieId": id
+        "movieId": movieId,
+        "frames": frames,
     }
-    r = requests.post(urlResponse, data=payload)
+    r = requests.post(urlResponse, data=json.dumps(payload))
     if r.json()["ok"]:
         return True
     return False
@@ -38,8 +38,8 @@ def waitForMovies(data):
 def processMovies(data):
     for movie in data:
         print (movie["id"])
-        process(path=movie["path"], pathToSave=movie["pathToSave"], movieName=movie["movieName"] , movieId=movie["id"])
-        sendingRequest(movie["id"])
+        frameInfo = process(path=movie["path"], pathToSave=movie["pathToSave"], movieName=movie["movieName"] , movieId=movie["id"])
+        sendingRequest(movie["id"], frameInfo)
     return waitForMovies, None
 
 
