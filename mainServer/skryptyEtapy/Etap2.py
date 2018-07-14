@@ -38,17 +38,14 @@ class MovieProcessed(View):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         for frameInfo in frames:
-            frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], data=frameInfo["date"], film=movie)
+            frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], film=movie)
             frame.save()
         print(movie.nazwa)
 
     def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8'))
+        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         movieId = data.get("movieId", False)
-        frames = data.get["frames", False]
-        # sessionId = request.POST.get("sessionId", False)
-        if any([movieId, frames]):
-            raise Http404
+        frames = data["frames"]
         try:
             self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
         except:

@@ -122,6 +122,7 @@ class AddMovie(View):
         files = data.get('files')
         folders = data.get('folders')
         sessionName = data.get('sessionName', 'autoName')
+        sessionName = "{}_{}".format(sessionName, timezone.now().time()).replace(":", "_").replace(".", "_")
         sessionPath = data.get('toFolderPath', '')
         sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
             if sessionPath == '' else sessionPath
