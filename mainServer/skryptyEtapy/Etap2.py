@@ -11,8 +11,13 @@ import os
 
 
 def getMultipleMovieStatuses(statuses):
-    return [StatusFilmu.objects.get_or_create(status=status)
+    return [StatusFilmu.objects.get_or_create(status=status)[0]
             for status in statuses]
+
+
+def removeMultipleStatuses(movie, statuses):
+    for status in getMultipleMovieStatuses(statuses):
+        movie.status.remove(status)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -63,7 +68,6 @@ class MovieProcessed(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GetNextMovie(View):
-
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8'))
         try:
@@ -71,22 +75,31 @@ class GetNextMovie(View):
         except:
             raise Http404
         try:
-            previousMovieId = data.get["previousMovieId"]
+            previousMovieId = data["previousMovieId"]
 
             previousMovie = Film.objects.get(pk=previousMovieId)
-            statusToAdd = StatusFilmu.objects.get_or_create(status="Przypisano punkty")
-            previousMovie.status.remove(getMultipleMovieStatuses(["W trakcie obslugi", "Przetworzono"]))
+            statusToAdd = StatusFilmu.objects.get_or_create(status="Przypisano punkty")[0]
+            removeMultipleStatuses(previousMovie, ["W trakcie obslugi", "Przetworzono"])
             previousMovie.status.add(statusToAdd)
-        except ValueError:
+            previousMovie.save()
+        except KeyError:
             pass
         except:
             raise HttpResponseServerError
         finally:
-            nextMovie = Film.objects \
-                .filter(sesja__pk=sessionId, status__status__in=["Przetworzono"]) \
-                .order_by("data")[0]
-            statusToAdd = StatusFilmu.objects.get_or_create(status="W trakcie obslugi")
-            nextMovie.status.add(statusToAdd)
+            try:
+                nextMovie = Film.objects \
+                    .filter(sesja__pk=sessionId, status__status__in=["Przetworzono"]) \
+                    .order_by("data")[0]
+                statusToAdd = StatusFilmu.objects.get_or_create(status="W trakcie obslugi")[0]
+                nextMovie.status.add(statusToAdd)
+            except IndexError:
+                movieCount = Film.objects \
+                    .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania"]).count()
+                if movieCount:
+                    return JsonResponse({"count": movieCount})
+                else:
+                    raise Http404
         return JsonResponse({"movieId": nextMovie.pk})
 
 
