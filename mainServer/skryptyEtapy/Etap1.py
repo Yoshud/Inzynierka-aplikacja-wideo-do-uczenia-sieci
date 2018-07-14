@@ -94,7 +94,7 @@ class AddMovie(View):
         y = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
         statusTags = ["Do przetworzenia", "Aktywny"]
-        statuses = [StatusFilmu.objects.get_or_create(status=tag) for tag in statusTags]
+        statuses = [StatusFilmu.objects.get_or_create(status=tag)[0] for tag in statusTags]
         film = Film(
             sciezka=path,
             nazwa=os.path.basename(path),
@@ -122,7 +122,8 @@ class AddMovie(View):
         files = data.get('files')
         folders = data.get('folders')
         sessionName = data.get('sessionName', 'autoName')
-        sessionName = "{}_{}".format(sessionName, timezone.now().time()).replace(":", "_").replace(".", "_")
+        now = timezone.now()
+        sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
         sessionPath = data.get('toFolderPath', '')
         sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
             if sessionPath == '' else sessionPath
