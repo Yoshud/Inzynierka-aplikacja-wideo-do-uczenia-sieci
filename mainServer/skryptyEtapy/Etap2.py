@@ -115,3 +115,58 @@ class GetFrame(View):
         response['Content-Disposition'] = 'attachment; imageName=%s' % os.path.basename(imagePath)
         response['Content-Length'] = os.path.getsize(imagePath)
         return response
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GetFramePositions(View):
+    def positionsAsJsonDict(self, positions):
+        if len(positions) > 0:
+            positionsArray = [{
+                "x": position.pozycjaX,
+                "y": position.pozycjaY,
+                "status": position.status.status,
+            } for position in positions]
+            return {"positions": positionsArray,
+                    "frameId": positions[0].klatka.pk,
+                    }
+        else:
+            return {}
+
+    def post(self, request, **kwargs):
+        def post(self, request, **kwargs):
+            data = json.loads(request.read().decode('utf-8'))
+            try:
+                movieId = data["movieId"]
+                frameNr = data["frameNr"]
+                positionObjects = PozycjaPunktu.objects.filter(klatka__film__pk=movieId, klatka__nr=frameNr)
+            except TypeError:
+                try:
+                    frameId = data.get("frameId")
+                    positionObjects = PozycjaPunktu.objects.filter(klatka__pk=frameId)
+                except:
+                    raise Http404
+            finally:
+                return JsonResponse(self.positionsAsJsonDict(positionObjects))
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddPosition(View):
+    def post(self, request, **kwargs):
+        try:
+            data = json.loads(request.read().decode('utf-8'))
+            frameId = data["frameId"]
+            position = data["position"]
+            x = position["x"]
+            y = position["y"]
+            frameObject = Klatka.objects.get(pk=frameId)
+        except:
+            raise Http404
+        try:
+            status = request["status"]
+        except TypeError:
+            status = "Dodane uzytkownik"
+        except:
+            raise Http404
+        finally:
+            statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
+            position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, pozycjaX=x, pozycjaY=y)
+            return JsonResponse({"positionId": position.pk})
