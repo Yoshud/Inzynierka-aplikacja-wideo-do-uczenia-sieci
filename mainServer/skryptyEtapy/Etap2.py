@@ -100,7 +100,14 @@ class GetNextMovie(View):
                     return JsonResponse({"count": movieCount})
                 else:
                     raise Http404
-        return JsonResponse({"movieId": nextMovie.pk})
+        return JsonResponse({
+            "movieId": nextMovie.pk,
+            "framesCount": nextMovie.iloscKlatek,
+            "fps": nextMovie.FPS,
+            "name": nextMovie.nazwa,
+            "x": nextMovie.rozmiarX,
+            "y": nextMovie.rozmiarY,
+        })
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -133,20 +140,20 @@ class GetFramePositions(View):
             return {}
 
     def post(self, request, **kwargs):
-        def post(self, request, **kwargs):
-            data = json.loads(request.read().decode('utf-8'))
+        data = json.loads(request.read().decode('utf-8'))
+        try:
+            movieId = data["movieId"]
+            frameNr = data["frameNr"]
+            positionObjects = PozycjaPunktu.objects.filter(klatka__film__pk=movieId, klatka__nr=frameNr)
+        except TypeError:
             try:
-                movieId = data["movieId"]
-                frameNr = data["frameNr"]
-                positionObjects = PozycjaPunktu.objects.filter(klatka__film__pk=movieId, klatka__nr=frameNr)
-            except TypeError:
-                try:
-                    frameId = data.get("frameId")
-                    positionObjects = PozycjaPunktu.objects.filter(klatka__pk=frameId)
-                except:
-                    raise Http404
-            finally:
-                return JsonResponse(self.positionsAsJsonDict(positionObjects))
+                frameId = data.get("frameId")
+                positionObjects = PozycjaPunktu.objects.filter(klatka__pk=frameId)
+            except:
+                raise Http404
+        finally:
+            return JsonResponse(self.positionsAsJsonDict(positionObjects))
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AddPosition(View):
