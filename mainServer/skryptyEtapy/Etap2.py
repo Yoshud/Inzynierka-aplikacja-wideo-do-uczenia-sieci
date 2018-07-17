@@ -4,21 +4,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import Http404, HttpResponseServerError
 from mainServer.models import *
+from mainServer.skryptyEtapy.helpersMethod import *
 from wsgiref.util import FileWrapper
 from django.http import HttpResponse
 import json
 import os
-
-
-def getMultipleMovieStatuses(statuses):
-    return [StatusFilmu.objects.get_or_create(status=status)[0]
-            for status in statuses]
-
-
-def removeMultipleStatuses(movie, statuses):
-    for status in getMultipleMovieStatuses(statuses):
-        movie.status.remove(status)
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ReturnMoviesToProcess(View):
@@ -125,13 +115,14 @@ class GetFrame(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GetFramePositions(View):
+class FramePosition(View):
     def positionsAsJsonDict(self, positions):
         if len(positions) > 0:
             positionsArray = [{
                 "x": position.pozycjaX,
                 "y": position.pozycjaY,
                 "status": position.status.status,
+                "id": position.pk,
             } for position in positions]
             return {"positions": positionsArray,
                     "frameId": positions[0].klatka.pk,
@@ -139,7 +130,7 @@ class GetFramePositions(View):
         else:
             return {}
 
-    def post(self, request, **kwargs):
+    def get(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8'))
         try:
             movieId = data["movieId"]
@@ -154,9 +145,6 @@ class GetFramePositions(View):
         finally:
             return JsonResponse(self.positionsAsJsonDict(positionObjects))
 
-
-@method_decorator(csrf_exempt, name='dispatch')
-class AddPosition(View):
     def post(self, request, **kwargs):
         try:
             data = json.loads(request.read().decode('utf-8'))
@@ -177,3 +165,19 @@ class AddPosition(View):
             statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
             position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, pozycjaX=x, pozycjaY=y)
             return JsonResponse({"positionId": position.pk})
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DeletePosition(View):
+    def post(self, request, **kwargs):
+        try:
+            data = json.loads(request.read().decode('utf-8'))
+            positionId = data["positionId"]
+            positionObject = PozycjaPunktu.objects.get(pk=positionId)
+            deleted = positionObject.delete()
+            if deleted.count() != 0:
+                raise Http404
+        except:
+            raise Http404
+
+        return JsonResponse({"ok": "ok"})

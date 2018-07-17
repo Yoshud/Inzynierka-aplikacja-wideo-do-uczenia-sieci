@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import Http404
+from mainServer.skryptyEtapy.helpersMethod import *
 import cv2
 import datetime
 from mainServer.models import *
@@ -15,29 +16,7 @@ from django.utils import timezone
 import json
 
 
-def filterFilms(files):
-    filmSufixes = [".mp4", ".avi", ".mpeg", ".mpg", ".h264"]
-    return list(filter(lambda file: any([sufix in file for sufix in filmSufixes]), files))
 
-
-def validateReturnForPath(folders):
-    if folders == None:
-        raise Http404
-
-
-def foldersAndMovieFilesFromPath(path):
-    _, foldernames, filenames = next(walk(path), (None, None, []))
-    validateReturnForPath(foldernames)
-    filenames = filterFilms(filenames)
-    return foldernames, filenames
-
-
-def pathUp(path):
-    return os.path.dirname(path)
-
-
-def currentPath():
-    return os.getcwd()
 
 
 @method_decorator(csrf_exempt, name='dispatch')
