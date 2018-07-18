@@ -18,9 +18,13 @@ def process(path, pathToSave, movieName, movieId):
     fps = cap.get(cv2.CAP_PROP_FPS)
     print("fps: {}".format(fps))
     it = 0
-
+    frameTimeOld = 0
     while 1:
         ret, frame = cap.read()
+        frameTime = cap.get(cv2.CAP_PROP_POS_MSEC)
+        delta = frameTime - frameTimeOld
+        frameTimeOld = frameTime
+        # print(delta)
         if ret != False:
             fullPathToSave = "{}_f{}.{}".format(pathToSave, it, imageSufix)
             try:

@@ -10,6 +10,6 @@ urlpatterns = [
     path('movieProcessed', views.movieProcessedView, name='MovieProcessed'),
     path('getNextMovie', views.getNextMovieView, name='getNextMovie'),
     path('getFrame', views.getFrameView, name='getFrame'),
-    path('getFramePositions', views.getFramePositionsView, name='getFramePositions'),
+    path('framePositions', views.framePositionsView, name='framePositions'),
     path('deletePosition', views.deletePositionView, name='deletePosition'),
 ]

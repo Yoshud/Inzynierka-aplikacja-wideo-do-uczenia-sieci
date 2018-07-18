@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 import os
-from functools import reduce
 from django.views.generic import View
 from os import walk
 from django.http import JsonResponse
