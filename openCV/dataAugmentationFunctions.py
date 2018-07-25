@@ -25,15 +25,15 @@ def cropAndResizeNewPointPosition(pointPosition, cropPosition, imgShape, expecte
 
 # def flipHorizontal(img, position, path, fileNameWithoutSufix):
 def flipHorizontal(img, position):
-    fliped = img.flip(img, 1)
-    return fliped, flipPointPosition(position, img.shape, 1)
+    flipped = img.flip(img, 1)
+    return flipped, flipPointPosition(position, img.shape, 1)
     # saveFile(path, fileNameWithoutSufix, 'flipH', fliped)
 
 
 # def flipVertical(img, position, path, fileNameWithoutSufix):
 def flipVertical(img, position):
-    fliped = img.flip(img, 0)
-    return fliped, flipPointPosition(position, img.shape, 0)
+    flipped = img.flip(img, 0)
+    return flipped, flipPointPosition(position, img.shape, 0)
     # saveFile(path, fileNameWithoutSufix, 'flipV', fliped)
 
 
@@ -72,11 +72,18 @@ def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
     return zip(imgs, newPointPositions)
 
 
-def process(paths, pathToSave, fileNames):
+def process2(paths, pathToSave, fileNames):
+    #zwraca: frameId, wsp_crop, pozycjaCrop, pozycjaPunkt
+    #otrzymuje sciezke do obrazu, sciezke do zapisu, pozycje punktu, kod augmentacji, ma utworzyc nazwe i zapisac
+    #reduce: zzipowane(funkcja, kodAugmentacji), retImgs(img, kodMetody, wspCrop, pozycjaCrop, pozycjaPunkt)
+    #retImgs - tablica dict
     pathToCreate = Path(pathToSave)
     pathToCreate.mkdir(parents=True, exist_ok=True)
     frameInfo = []
 
+def process(path, fileName, pathToSave, pointPosition, augmentationCode):
+    functions = []
+    pass
 
 def processImg(path, fileName, pathToSave):
     fileNameAndSufix = fileName.split('.')

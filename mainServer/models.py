@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 
+
 class Status(models.Model):
     status = models.CharField("status", max_length=100)
 
@@ -16,11 +17,31 @@ class StatusPozycji(Status):
     pass
 
 
-class PozycjaPunktu(models.Model):
-    klatka = models.ForeignKey("Klatka", related_name="pozycja", on_delete=models.CASCADE)
-    status = models.ForeignKey("StatusPozycji", related_name="pozycja", on_delete=models.CASCADE, blank=True, null=True)
+class StatusPozycjiCrop(Status):
+    pass
+
+
+class Punkt(models.Model):
     pozycjaX = models.IntegerField("x", default=0)
     pozycjaY = models.IntegerField("y", default=0)
+
+    class Meta:
+        abstract = True
+
+
+class PozycjaPunktu(Punkt):
+    klatka = models.ForeignKey("Klatka", related_name="pozycja", on_delete=models.CASCADE)
+    status = models.ForeignKey("StatusPozycji", related_name="pozycja", on_delete=models.CASCADE, blank=True, null=True)
+
+
+class PozycjaPunktuPoCrop(Punkt):
+    obraz = models.ForeignKey("ObrazPoDostosowaniu", related_name="pozycja", on_delete=models.CASCADE)
+    status = models.ForeignKey("StatusPozycjiCrop", related_name="pozycja", on_delete=models.CASCADE, blank=True,
+                               null=True)
+
+
+class PozycjaCropa(Punkt):
+    pass
 
 
 class Klatka(models.Model):
@@ -45,6 +66,22 @@ class Film(models.Model):
 
 class FolderZObrazami(models.Model):
     sciezka = models.TextField(default="")
+
+
+class FolderZPrzygotowanymiObrazami(models.Model):
+    sciezka = models.TextField(default="")
+
+
+class ObrazPoDostosowaniu(models.Model):
+    pozycjaCropa = models.OneToOneField("PozycjaCropa", related_name="obraz", on_delete=models.CASCADE)
+    wsp_resize = models.FloatField(default=1.0)
+    klatka = models.ForeignKey("Klatka", on_delete=models.CASCADE)
+
+
+class ZlecenieAugmentacji(models.Model):
+    klatka = models.ForeignKey("Klatka", on_delete=models.CASCADE)
+    kodAugmentacji = models.IntegerField(default=114)  # po koleji: flipV(0 or 1), flipH(0 or 1), randomCrop(1-9)
+    folder = models.OneToOneField("FolderZPrzygotowanymiObrazami", on_delete=models.CASCADE)
 
 
 # class Obraz(models.Model):
@@ -76,12 +113,14 @@ class ParametryUczenia(models.Model):
     opisUczeniaXML = models.TextField(default="")
 
 
-class AktualneWyniki(models.Model):  # używane przez CRONa głównego backendu do śledzenia uczenia sieci bez potrzeby kounikacji
+class AktualneWyniki(
+    models.Model):  # używane przez CRONa głównego backendu do śledzenia uczenia sieci bez potrzeby kounikacji
     data = models.DateTimeField(default=timezone.now)
     status = models.TextField(default="")
 
 
-class Uczenie(models.Model): # na tej podstawie CRON backendu machinelearning rozpoznaje kiedy się uczyć i jak (z danych i parsowania xml)
+class Uczenie(
+    models.Model):  # na tej podstawie CRON backendu machinelearning rozpoznaje kiedy się uczyć i jak (z danych i parsowania xml)
 
     STATUS_UCZENIA = (
         ('N', 'do nauczania'),
@@ -92,12 +131,14 @@ class Uczenie(models.Model): # na tej podstawie CRON backendu machinelearning ro
     wynik = models.OneToOneField("WynikUczenia", blank=True, null=True, on_delete=models.CASCADE)
     parametry = models.ForeignKey("ParametryUczenia", on_delete=models.CASCADE)
 
+
 class WynikUczenia(models.Model):
     sciezkaDoSieci = models.TextField()
     mean = models.FloatField(default=0.0, blank=True, null=True)
     std = models.FloatField(default=0.0, blank=True, null=True)
     minMeanWTrakcieNauki = models.FloatField(default=0.0, blank=True, null=True)
     histogram = models.ImageField(blank=True, null=True)
+
 
 class FilmWynik(models.Model):
     wynikUczenia = models.ForeignKey("WynikUczenia", on_delete=models.CASCADE)
@@ -111,6 +152,7 @@ class WynikPrzetwarzania(models.Model):
     klatka = models.OneToOneField("Klatka", on_delete=models.CASCADE)
     numer = models.IntegerField(default=0)
     nazwa = models.CharField("nazwa", max_length=80, default="")
+
 
 # koniecCZ2
 
