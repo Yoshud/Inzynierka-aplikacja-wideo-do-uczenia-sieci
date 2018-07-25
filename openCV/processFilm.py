@@ -11,7 +11,7 @@ def process(path, pathToSave, movieName, movieId):
 
     movieNameAndSufix = movieName.split('.')
     filePrefix = "{}_{}".format(movieNameAndSufix[0], movieId)
-    movieSufix = movieNameAndSufix[1]
+    movieSufix = movieNameAndSufix[-1]
     imageSufix = "jpg"
     pathToSave = os.path.join(pathToSave, filePrefix).replace('\\', '/')
     cap = cv2.VideoCapture(path.replace('\\', '/'))
@@ -39,7 +39,7 @@ def process(path, pathToSave, movieName, movieId):
             it += 1
         else:
             break
-        if cv2.waitKey(10) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
