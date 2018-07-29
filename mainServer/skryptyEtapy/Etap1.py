@@ -60,6 +60,34 @@ class AddMovie(View):
             "y": int(y),
         })
 
+    def post(self, request, **kwargs):
+        data = json.loads(request.read().decode('utf-8'))
+        path = data.get('path', '')
+        if path == '':
+            raise Http404
+        files = data.get('files')
+        folders = data.get('folders')
+        sessionName = data.get('sessionName', 'autoName')
+        now = timezone.now()
+        sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
+        sessionPath = data.get('toFolderPath', '')
+        sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
+            if sessionPath == '' else sessionPath
+        imageFolder = FolderZObrazami(sciezka=sessionPath)
+        imageFolder.save()
+        session = Sesja(nazwa=sessionName, folderZObrazami=imageFolder)
+        session.save()
+        request.session["sessionPk"] = session.pk
+        if files:
+            for file in files:
+                self.addMovie(session.pk, os.path.join(path, file))
+        if folders:
+            for folder in folders:
+                self.addFolder(session.pk, os.path.join(path, folder))
+        return JsonResponse({
+            'sessionId': session.pk
+        })
+
     def addMovie(self, sessionPK, path):
         cap = cv2.VideoCapture(path)
         if cap is None or not cap.isOpened():
@@ -91,31 +119,3 @@ class AddMovie(View):
         folders, files = foldersAndMovieFilesFromPath(path)
         for file in files:
             self.addMovie(sessionPK, os.path.join(path, file))
-
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8'))
-        path = data.get('path', '')
-        if path == '':
-            raise Http404
-        files = data.get('files')
-        folders = data.get('folders')
-        sessionName = data.get('sessionName', 'autoName')
-        now = timezone.now()
-        sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
-        sessionPath = data.get('toFolderPath', '')
-        sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
-            if sessionPath == '' else sessionPath
-        imageFolder = FolderZObrazami(sciezka=sessionPath)
-        imageFolder.save()
-        session = Sesja(nazwa=sessionName, folderZObrazami=imageFolder)
-        session.save()
-        request.session["sessionPk"] = session.pk
-        if files:
-            for file in files:
-                self.addMovie(session.pk, os.path.join(path, file))
-        if folders:
-            for folder in folders:
-                self.addFolder(session.pk, os.path.join(path, folder))
-        return JsonResponse({
-            'sessionId': session.pk
-        })

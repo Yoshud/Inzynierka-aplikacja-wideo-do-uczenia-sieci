@@ -24,6 +24,14 @@ interpolatedPositonStatus = "Interpolacja"
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ReturnMoviesToProcess(View):
+    def post(self, request, **kwargs):
+        movies = Film.objects \
+                     .filter(status__status__in=["Do przetworzenia"])[:5]
+        moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
+        return JsonResponse({
+            "movies": moviesDict,
+        })
+
     def addMovieToMoviesDict(self, movie,
                              statusToRemove=StatusFilmu.objects.get_or_create(status="Do przetworzenia")[0],
                              statusToAdd=StatusFilmu.objects.get_or_create(status="W trakcie przetwarzania")[0]):
@@ -36,27 +44,9 @@ class ReturnMoviesToProcess(View):
             "pathToSave": movie.sesja.folderZObrazami.sciezka,
         }
 
-    def post(self, request, **kwargs):
-        movies = Film.objects \
-                     .filter(status__status__in=["Do przetworzenia"])[:5]
-        moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
-        return JsonResponse({
-            "movies": moviesDict,
-        })
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class MovieProcessed(View):
-    def addToProcessedMovies(self, movie, frames,
-                             statusToRemove=StatusFilmu.objects.get_or_create(status="W trakcie przetwarzania")[0],
-                             statusToAdd=StatusFilmu.objects.get_or_create(status="Przetworzono")[0]):
-        movie.status.remove(statusToRemove)
-        movie.status.add(statusToAdd)
-        for frameInfo in frames:
-            frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], film=movie)
-            frame.save()
-        print(movie.nazwa)
-
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         movieId = data.get("movieId", False)
@@ -66,6 +56,16 @@ class MovieProcessed(View):
         except:
             raise HttpResponseServerError
         return JsonResponse({"ok": True})
+
+    def addToProcessedMovies(self, movie, frames,
+                             statusToRemove=StatusFilmu.objects.get_or_create(status="W trakcie przetwarzania")[0],
+                             statusToAdd=StatusFilmu.objects.get_or_create(status="Przetworzono")[0]):
+        movie.status.remove(statusToRemove)
+        movie.status.add(statusToAdd)
+        for frameInfo in frames:
+            frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], film=movie)
+            frame.save()
+        print(movie.nazwa)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
