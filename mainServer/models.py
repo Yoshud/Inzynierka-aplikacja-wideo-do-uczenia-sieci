@@ -73,9 +73,22 @@ class FolderZPrzygotowanymiObrazami(models.Model):
 
 
 class ObrazPoDostosowaniu(models.Model):
+    FLIP_V = 'V'
+    FLIP_H = 'H'
+    ORGINAL = 'O'
+    METHODS = (
+        (FLIP_V, "flipped vertical"),
+        (FLIP_H, "flipped horizontal"),
+        (ORGINAL, "orginal")
+    )
+    # zostaje, ale prawdopodobnie najlepiej liczyc pozycje punktu na podstawie odpowidnika przypoisanego ( delta = punktPoCrop - PoUczeniu, PunktNaKlatce = punktPierwotny - delta (+ uwzględnić metodę i resize))
     pozycjaCropa = models.OneToOneField("PozycjaCropa", related_name="obraz", on_delete=models.CASCADE)
-    wsp_resize = models.FloatField(default=1.0)
-    klatka = models.ForeignKey("Klatka", on_delete=models.CASCADE)
+
+    wspResize = models.FloatField(default=1.0)
+    klatkaMacierzysta = models.ForeignKey("Klatka", on_delete=models.CASCADE)
+    sciezka = models.TextField(default="")
+    metoda = models.CharField(max_length=1, choices=METHODS)
+    # PozycjaPunktuPoCrop w polu oddzielnym
 
 
 class ZlecenieAugmentacji(models.Model):
@@ -84,11 +97,6 @@ class ZlecenieAugmentacji(models.Model):
     folder = models.OneToOneField("FolderZPrzygotowanymiObrazami", on_delete=models.CASCADE)
     wTrakcie = models.BooleanField(default=False)
 
-# class Obraz(models.Model):
-#     klatka = models.OneToOneField("Klatka", blank=True, null=True, on_delete=models.CASCADE)
-#     # folder = models.ForeignKey("FolderZObrazami", on_delete=models.CASCADE)
-#     nazwa = models.CharField("nazwa", max_length=80, default="")
-#     data = models.DateTimeField(default=timezone.now)
 
 # Konieć CZ1:
 

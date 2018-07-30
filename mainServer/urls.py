@@ -12,4 +12,7 @@ urlpatterns = [
     path('getFrame', views.getFrameView, name='getFrame'),
     path('framePositions', views.framePositionsView, name='framePositions'),
     path('deletePosition', views.deletePositionView, name='deletePosition'),
+    path('dataAugmentationOrder', views.dataAugmentationOrderView, name='dataAugmentationOrder'),
+    path('imageAfterDataAugmentation', views.imageAfterDataAugmentationView, name='imageAfterDataAugmentation'),
+
 ]
