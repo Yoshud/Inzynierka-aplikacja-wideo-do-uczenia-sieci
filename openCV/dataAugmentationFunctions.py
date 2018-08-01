@@ -5,6 +5,7 @@ from pathlib import Path
 from openCV.calculateCropPoint import *
 from functools import reduce
 
+
 def saveFile(path, fileName, methodTag, img, imgSufix="jpg"):
     fullPath = os.path.join(path, "{}_{}.{}".format(fileName, methodTag, imgSufix)).replace('\\', '/')
     cv2.imwrite(fullPath, img)
@@ -15,6 +16,7 @@ def flipPointPosition(position, imgShape, flipType):
     positionIt = (flipType + 1) % 2  # 1 jeśli 0, 0 jeśli 1
     retPosition[positionIt] = imgShape[flipType] - retPosition[positionIt]
     return retPosition
+
 
 def cropAndResizeNewPointPosition(pointPosition, cropPosition, imgShape, expectedSize, cropScale=0.8):
     expectedSize = np.array(expectedSize)
@@ -49,11 +51,12 @@ def crop(img, height, width, x0=-1, y0=-1):
     ymin = int(y0 - width / 2)
     ymax = int(y0 + width / 2)
 
-    return img[xmin:xmax, ymin:ymax]
+    return img[ymin:ymax, xmin:xmax]
 
 
 def resize(img, size=(0, 0), scale=0):
-    return cv2.resize(img, size, scale, scale, interpolation=cv2.INTER_AREA)
+    img = cv2.resize(img, tuple(size), scale, scale, interpolation=cv2.INTER_AREA)
+    return img
 
 
 def cropWithResize(img, expectedSize, cropHeight, cropWidth, x0=-1, y0=-1):
@@ -65,7 +68,7 @@ def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
     cropScale = 0.8
     imgHeight = img.shape[0]
     if numberOfCrops == 1:
-        cropPositions = [cropPositionZero(img.shape, pointPosition, toBorderHeightFactor=0.0), ]
+        cropPositions = [cropPositionZero(img.shape, pointPosition, toBorderHeightFactor=0.0).astype(int), ]
     else:
         cropPositions = [randomCropPosition(img.shape, pointPosition) for it in range(numberOfCrops)]
     newPointPositions = [cropAndResizeNewPointPosition(pointPosition, cropPosition, img.shape, expectedSize)
@@ -128,7 +131,8 @@ class RandomCropFunctor:
                 retImgsDict.append({
                     "img": retImg,
                     "position": retPosition,
-                    "methodCode": "_{}_{}".format(methodCode, "randomCrop"),
+                    "methodCode": "{}_{}_{}_{}".format(methodCode, "crop", retCropPosition[0], retCropPosition[0]),
+                    "orginalMethodCode": methodCode,
                     "resizeScale": retResizeScale,
                     "cropPosition": retCropPosition
                 })
@@ -136,23 +140,15 @@ class RandomCropFunctor:
 
 
 # def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
-def process(path, pathToSave, pointPosition, augmentationCode, expectedSize):
-    fileName = os.path.basename(path)
-    fileNameAndSufix = fileName.split('.')
-    fileNameWithoutSufix = '.'.join(fileNameAndSufix[:-1])
-    fileSufix = fileNameAndSufix[-1]
-    imageSufix = "jpg"
-
+def process(path, pointPosition, augmentationCode, expectedSize):
     img = cv2.imread(path.replace('\\', '/'))
     functions = [flipVerticalToReduce, flipHorizontalToReduce, RandomCropFunctor(expectedSize).cropMethodToReduce]
     imgsDict = [{
         "img": img,
         "position": pointPosition,
-        "methodCode": "",
+        "methodCode": "orginal",
     }, ]
     augmentationCodeStr = str(augmentationCode)[1:]
     functionsWithCode = list(zip(functions, augmentationCodeStr))
     imgs = reduce(lambda imgsDict, funCode: funCode[0](int(funCode[1]), imgsDict), functionsWithCode, imgsDict)
     return imgs
-
-

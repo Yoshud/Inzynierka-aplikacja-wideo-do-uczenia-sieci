@@ -2,7 +2,9 @@ from mainServer.models import *
 import os
 from os import walk
 from django.http import Http404
-
+endPositionStatus = "Koniec"
+userPositionStatus = "Dodane uzytkownik"
+interpolatedPositonStatus = "Interpolacja"
 
 def filterFilms(files):
     filmSufixes = [".mp4", ".avi", ".mpeg", ".mpg", ".h264"]

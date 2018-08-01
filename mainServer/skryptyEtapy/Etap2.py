@@ -17,11 +17,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from time import sleep
 import numpy as np
 
-endPositionStatus = "Koniec"
-userPositionStatus = "Dodane uzytkownik"
-interpolatedPositonStatus = "Interpolacja"
-
-
 @method_decorator(csrf_exempt, name='dispatch')
 class ReturnMoviesToProcess(View):
     def post(self, request, **kwargs):
@@ -162,7 +157,7 @@ class FramePosition(View):
             raise Http404
         finally:
             statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
-            position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, pozycjaX=x, pozycjaY=y)
+            position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, pozycjaX=x, pozycjaY=y) # sprawdzac czy nie wystepuje
             if status == endPositionStatus:
                 self.addInterpolationPosition(frameObject)
             return JsonResponse({"positionId": position.pk})

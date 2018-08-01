@@ -95,6 +95,8 @@ class ZlecenieAugmentacji(models.Model):
     klatka = models.ForeignKey("Klatka", on_delete=models.CASCADE)
     kodAugmentacji = models.IntegerField(default=114)  # po koleji: flipV(0 or 1), flipH(0 or 1), randomCrop(1-9)
     folder = models.OneToOneField("FolderZPrzygotowanymiObrazami", on_delete=models.CASCADE)
+    oczekiwanyRozmiarX = models.IntegerField("x")
+    oczekiwanyRozmiarY = models.IntegerField("y")
     wTrakcie = models.BooleanField(default=False)
 
 
