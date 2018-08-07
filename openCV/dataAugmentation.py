@@ -63,7 +63,7 @@ def processOrders(data):
             fullPathToSave = os.path.join(pathToSave,
                                           "{}_{}.{}".format(fileName, imgDict["methodCode"], fileSufix))
             fullPathToSave = fullPathToSave.replace('\\', '/')
-            if cv2.imwrite(fullPathToSave, imgDict["img"]):
+            if cv2.imwrite(fullPathToSave, imgDict["img"], [cv2.IMWRITE_PNG_COMPRESSION, 0]):
                 sendingRequest(
                     toImagePath=fullPathToSave,
                     frameId=frameId,

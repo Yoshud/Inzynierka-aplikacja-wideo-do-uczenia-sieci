@@ -1,3 +1,4 @@
+import base64
 from django.views.generic import View
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -114,12 +115,9 @@ class GetFrame(View):
         movieId = data.get("movieId")
         frameNr = data.get("frameNr")
         imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).sciezka
-        wrapper = FileWrapper(open(os.path.abspath(imagePath), 'rb'))
-        response = HttpResponse(wrapper, content_type='image/jpg')
-        response['Content-Disposition'] = 'attachment; imageName=%s' % os.path.basename(imagePath)
-        response['Content-Length'] = os.path.getsize(imagePath)
+        wrapper = base64.b64encode(open(imagePath, 'rb').read()).decode('utf-8')
+        response = HttpResponse(wrapper, content_type='image/png')
         return response
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class FramePosition(View):
