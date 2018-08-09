@@ -47,3 +47,32 @@ class DiviceIntoSets(View):
         except:
             raise HttpResponseServerError
         return JsonResponse({"dataSetId": dataSetObject.pk})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class Learn(View):
+    def post(self, request, **kwargs):
+        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
+        try:
+            description = data["description"]
+        except KeyError:
+            description = None
+        try:
+            parametersId = data["parametersId"]
+        except:
+            raise HttpResponseBadRequest
+        learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId)
+        return JsonResponse({"learnId": learnObject.pk})
+
+    def get(self, request, **kwargs): #dodac pozostale dane
+        try:
+            learnObject = Uczenie.objects.filter(statusNauki='N')[0]
+            trainSetPaths = [imgObject.sciezka for imgObject in learnObject.parametry.zbiory.uczacy.iterator()]
+            validatorSetPaths = [imgObject.sciezka for imgObject in learnObject.parametry.zbiory.walidacyjny.iterator()]
+            testSetPaths = [imgObject.sciezka for imgObject in learnObject.parametry.zbiory.testowy.iterator()]
+        except:
+            raise Http404
+        return JsonResponse({
+            "trainSetPaths": trainSetPaths,
+            "validatorSetPaths": validatorSetPaths,
+            "testSetPaths": testSetPaths,
+        })

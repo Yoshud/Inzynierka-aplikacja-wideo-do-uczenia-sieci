@@ -15,4 +15,5 @@ urlpatterns = [
     path('dataAugmentationOrder', views.dataAugmentationOrderView, name='dataAugmentationOrder'),
     path('imageAfterDataAugmentation', views.imageAfterDataAugmentationView, name='imageAfterDataAugmentation'),
     path('diviceIntoSets', views.diviceIntoSetsView, name='diviceIntoSets'),
+    path('learn', views.learnView, name='learn'),
 ]
