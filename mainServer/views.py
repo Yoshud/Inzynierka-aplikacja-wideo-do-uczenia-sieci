@@ -3,6 +3,7 @@ from django.http import HttpResponse
 import mainServer.skryptyEtapy.Etap1 as etap1
 import mainServer.skryptyEtapy.Etap2 as etap2
 import mainServer.skryptyEtapy.Etap3 as etap3
+import mainServer.skryptyEtapy.Etap4 as etap4
 
 
 def index(request):
@@ -19,3 +20,4 @@ framePositionsView = etap2.FramePosition.as_view()
 deletePositionView = etap2.DeletePosition.as_view()
 dataAugmentationOrderView = etap3.DataAugmentationOrder.as_view()
 imageAfterDataAugmentationView = etap3.ImageAfterDataAugmentation.as_view()
+diviceIntoSetsView = etap4.DiviceIntoSets.as_view()

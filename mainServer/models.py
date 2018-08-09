@@ -104,9 +104,9 @@ class ZlecenieAugmentacji(models.Model):
 
 class ZbioryDanych(models.Model):
     sesja = models.ForeignKey("Sesja", on_delete=models.CASCADE)
-    uczacy = models.ManyToManyField("Klatka", related_name="zbioryUczacy")
-    walidacyjny = models.ManyToManyField("Klatka", related_name="zbioryWalidacyjny", blank=True)
-    testowy = models.ManyToManyField("Klatka", related_name="zbioryTestowy", blank=True)
+    uczacy = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryUczacy")
+    walidacyjny = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryWalidacyjny", blank=True)
+    testowy = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryTestowy", blank=True)
 
 
 class Sieci(models.Model):
@@ -134,6 +134,7 @@ class Uczenie(
 
     STATUS_UCZENIA = (
         ('N', 'do nauczania'),
+        ('T', 'w trakcie'),
         ('K', 'ukonczono nauke'),
     )
     statusNauki = models.CharField(max_length=1, choices=STATUS_UCZENIA, default='N')
