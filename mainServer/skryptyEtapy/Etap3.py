@@ -56,7 +56,7 @@ class DataAugmentationOrder(View):
 
     def orderToDict(self, dataAugmenationOrder):
         positionObject = self.getUserPositionOr404(dataAugmenationOrder.klatka)
-        position = (positionObject.pozycjaX, positionObject.pozycjaY)
+        position = (positionObject.x, positionObject.y)
         expectedSize = (dataAugmenationOrder.oczekiwanyRozmiarX, dataAugmenationOrder.oczekiwanyRozmiarY)
         orderDict = {
             "frameId": dataAugmenationOrder.klatka.pk,
@@ -114,7 +114,7 @@ class ImageAfterDataAugmentation(View):
 
     def addImage(self, pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode):
         status = StatusPozycjiCrop.objects.get_or_create(status="punktOrginalny")[0]
-        cropPositionObject = PozycjaCropa.objects.create(pozycjaX=int(cropPosition[0]), pozycjaY=int(cropPosition[1]))
+        cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
         image = ObrazPoDostosowaniu.objects.create(
             pozycjaCropa=cropPositionObject,
             wspResize=resizeScale,
@@ -125,5 +125,5 @@ class ImageAfterDataAugmentation(View):
 
         PozycjaPunktuPoCrop.objects.create(
             obraz=image, status=status,
-            pozycjaX=int(float(pointPosition[0])), pozycjaY=int(float(pointPosition[1]))
+            x=int(float(pointPosition[0])), y=int(float(pointPosition[1]))
         )

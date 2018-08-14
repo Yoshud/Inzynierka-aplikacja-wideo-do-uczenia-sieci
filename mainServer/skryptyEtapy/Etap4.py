@@ -11,8 +11,9 @@ from functools import reduce
 from time import sleep
 import numpy as np
 
+
 @method_decorator(csrf_exempt, name='dispatch')
-class DiviceIntoSets(View):
+class DivideIntoSets(View):
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         try:
@@ -48,6 +49,7 @@ class DiviceIntoSets(View):
             raise HttpResponseServerError
         return JsonResponse({"dataSetId": dataSetObject.pk})
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class Learn(View):
     def post(self, request, **kwargs):
@@ -63,16 +65,22 @@ class Learn(View):
         learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId)
         return JsonResponse({"learnId": learnObject.pk})
 
-    def get(self, request, **kwargs): #dodac pozostale dane
+    def get(self, request, **kwargs):  # dodac pozostale dane
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
-            trainSetPaths = [imgObject.sciezka for imgObject in learnObject.parametry.zbiory.uczacy.iterator()]
-            validatorSetPaths = [imgObject.sciezka for imgObject in learnObject.parametry.zbiory.walidacyjny.iterator()]
-            testSetPaths = [imgObject.sciezka for imgObject in learnObject.parametry.zbiory.testowy.iterator()]
+            responseData = {
+                "trainSet": self.setData(learnObject.parametry.zbiory.uczacy),
+                "validatorSet": self.setData(learnObject.parametry.zbiory.walidacyjny),
+                "testSet": self.setData(learnObject.parametry.zbiory.testowy),
+            }
         except:
             raise Http404
-        return JsonResponse({
-            "trainSetPaths": trainSetPaths,
-            "validatorSetPaths": validatorSetPaths,
-            "testSetPaths": testSetPaths,
-        })
+        return JsonResponse(responseData)
+
+    def setData(self, set):
+        setPathsWithPositions = [
+            [imgObject.sciezka, imgObject.pozycja.filter(status__status="punktOrginalny")[0]]
+            for imgObject in set.iterator()
+        ]
+        setPathsWithPositions = [[patch, [position.x, position.y]] for patch, position in setPathsWithPositions]
+        return setPathsWithPositions

@@ -22,8 +22,8 @@ class StatusPozycjiCrop(Status):
 
 
 class Punkt(models.Model):
-    pozycjaX = models.IntegerField("x", default=0)
-    pozycjaY = models.IntegerField("y", default=0)
+    x = models.IntegerField("x", default=0)
+    y = models.IntegerField("y", default=0)
 
     class Meta:
         abstract = True
