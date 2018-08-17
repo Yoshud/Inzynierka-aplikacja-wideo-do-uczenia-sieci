@@ -68,10 +68,12 @@ class Learn(View):
     def get(self, request, **kwargs):  # dodac pozostale dane
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
+            parameters = self.parametersToDict(learnObject)
             responseData = {
                 "trainSet": self.setData(learnObject.parametry.zbiory.uczacy),
                 "validatorSet": self.setData(learnObject.parametry.zbiory.walidacyjny),
                 "testSet": self.setData(learnObject.parametry.zbiory.testowy),
+                "parameters": parameters,
             }
         except:
             raise Http404
@@ -84,3 +86,14 @@ class Learn(View):
         ]
         setPathsWithPositions = [[patch, [position.x, position.y]] for patch, position in setPathsWithPositions]
         return setPathsWithPositions
+
+    def parametersToDict(self, learnObject):
+        parameters = learnObject.parametry
+        return {
+            "learningRate": parameters.learning_rate,
+            "batch_size": parameters.batch_size,
+            "dropout": parameters.dropout,
+            "numbersOfIters": parameters.iloscIteracji,
+            "network": json.dumps(parameters.modelSieci.opisXML),
+            "others": json.dumps(parameters.opisUczeniaXML),
+        }
