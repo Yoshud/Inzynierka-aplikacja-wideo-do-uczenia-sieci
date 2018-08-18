@@ -110,6 +110,8 @@ class ZbioryDanych(models.Model):
 
 
 class Sieci(models.Model):
+    inputSizeX = models.IntegerField(default=-1)
+    inputSizeY = models.IntegerField(default=-1)
     opisXML = models.TextField(default="")
 
 
@@ -118,6 +120,8 @@ class ParametryUczenia(models.Model):
     batch_size = models.IntegerField(default=64, blank=True, null=True)
     dropout = models.FloatField(default=0.5, blank=True, null=True)
     iloscIteracji = models.IntegerField(default=10000, blank=True, null=True)
+    saveStep = models.IntegerField(default=500, blank=True, null=True)
+    epochSize = models.IntegerField(default=50, blank=True, null=True)
     modelSieci = models.ForeignKey("Sieci", on_delete=models.CASCADE)
     zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE)
     opisUczeniaXML = models.TextField(default="")

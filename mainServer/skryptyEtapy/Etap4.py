@@ -65,7 +65,7 @@ class Learn(View):
         learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId)
         return JsonResponse({"learnId": learnObject.pk})
 
-    def get(self, request, **kwargs):  # dodac pozostale dane
+    def get(self, request, **kwargs):  # dostosowac by dodac do sieci infomracje o wejsciu sieci i poloczyc z tym augmentacje
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
             parameters = self.parametersToDict(learnObject)
@@ -91,9 +91,13 @@ class Learn(View):
         parameters = learnObject.parametry
         return {
             "learningRate": parameters.learning_rate,
-            "batch_size": parameters.batch_size,
+            "batchSize": parameters.batch_size,
             "dropout": parameters.dropout,
             "numbersOfIters": parameters.iloscIteracji,
-            "network": json.dumps(parameters.modelSieci.opisXML),
-            "others": json.dumps(parameters.opisUczeniaXML),
+            "epochSize": parameters.epochSize,
+            "saveStep": parameters.saveStep,
+            "network": json.loads(parameters.modelSieci.opisXML),
+            "imgSizeX": parameters.modelSieci.inputSizeX,
+            "imgSizeY": parameters.modelSieci.inputSizeY,
+            "others": json.loads(parameters.opisUczeniaXML),
         }
