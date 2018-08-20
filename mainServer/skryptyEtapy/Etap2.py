@@ -3,7 +3,7 @@ from django.views.generic import View
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.http import Http404, HttpResponseServerError
+from django.http import Http404, HttpResponseServerError, HttpResponseBadRequest
 from mainServer.models import *
 from mainServer.skryptyEtapy.helpersMethod import *
 from wsgiref.util import FileWrapper
@@ -17,6 +17,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from time import sleep
 import numpy as np
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ReturnMoviesToProcess(View):
@@ -61,6 +62,7 @@ class MovieProcessed(View):
         for frameInfo in frames:
             frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], film=movie)
             frame.save()
+            sleep(0.1)
         print(movie.nazwa)
 
 
@@ -94,10 +96,9 @@ class GetNextMovie(View):
             except IndexError:
                 movieCount = Film.objects \
                     .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania"]).count()
-                if movieCount:
-                    return JsonResponse({"count": movieCount})
-                else:
-                    raise Http404
+
+                return JsonResponse({"count": movieCount}, status=400)
+
         return JsonResponse({
             "movieId": nextMovie.pk,
             "framesCount": nextMovie.iloscKlatek,
@@ -119,23 +120,24 @@ class GetFrame(View):
         response = HttpResponse(wrapper, content_type='image/png')
         return response
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class FramePosition(View):
 
     def get(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8'))
-        try:
-            movieId = data["movieId"]
-            frameNr = data["frameNr"]
+        movieId = request.GET.get('movieId', False)
+        frameNr = request.GET.get("frameNr", False)
+        if movieId and frameNr:
             positionObjects = PozycjaPunktu.objects.filter(klatka__film__pk=movieId, klatka__nr=frameNr)
-        except TypeError:
-            try:
-                frameId = data.get("frameId")
+        else:
+
+            frameId = request.GET.get("frameId", False)
+            if frameId:
                 positionObjects = PozycjaPunktu.objects.filter(klatka__pk=frameId)
-            except:
-                raise Http404
-        finally:
-            return JsonResponse(self.positionsAsDict(positionObjects))
+            else:
+                raise HttpResponseBadRequest
+
+        return JsonResponse(self.positionsAsDict(positionObjects))
 
     def post(self, request, **kwargs):
         try:
@@ -155,7 +157,8 @@ class FramePosition(View):
             raise Http404
         finally:
             statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
-            position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, pozycjaX=x, pozycjaY=y) # sprawdzac czy nie wystepuje
+            position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, x=x,
+                                                    y=y)  # sprawdzac czy nie wystepuje
             if status == endPositionStatus:
                 self.addInterpolationPosition(frameObject)
             return JsonResponse({"positionId": position.pk})
@@ -165,15 +168,16 @@ class FramePosition(View):
             return None
         if len(positions) > 0:
             positionsArray = [{
-                                  "x": position.pozycjaX,
-                                  "y": position.pozycjaY,
+                                  "x": position.x,
+                                  "y": position.y,
                                   "status": position.status.status,
                                   "id": position.pk,
                               } if position else None
                               for position in positions]
-            return {"positions": positionsArray,
-                    "frameId": positions[-1].klatka.pk,
-                    }
+            return {
+                "positions": positionsArray,
+                "frameId": positions[0].klatka.pk,
+            }
         else:
             return {}
 
@@ -181,7 +185,7 @@ class FramePosition(View):
         if dictions is None:
             return None
         return zip(*[(dictElement["x"], dictElement["y"]) if dictElement else (None, None)
-                for dictElement in dictions['positions']])
+                     for dictElement in dictions['positions']])
 
     def positionsXYInfo(self, positionObjects):
         positionDicts = self.positionsAsDict(positionObjects)
@@ -258,8 +262,8 @@ class FramePosition(View):
         for x, y, frame in zip(interpolatedXs, interpolatedYs, frames):
             status = StatusPozycji.objects.get_or_create(status=interpolatedPositonStatus)[0]
             newPosition = PozycjaPunktu.objects.create(
-                pozycjaX=x,
-                pozycjaY=y,
+                x=x,
+                y=y,
                 status=status,
                 klatka=frame)
             sleep(0.01)  # prevent from locking database in sqlite
