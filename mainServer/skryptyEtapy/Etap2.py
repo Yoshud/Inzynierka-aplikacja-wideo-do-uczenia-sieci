@@ -155,29 +155,48 @@ class FramePosition(View):
             raise Http404
         try:
             status = data["status"]
-        except TypeError:
+        except KeyError:
             status = "Dodane uzytkownik"
         except:
             raise Http404
         finally:
             statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
-            position = PozycjaPunktu.objects.create(klatka=frameObject, status=statusObject, x=x,
-                                                    y=y)  # sprawdzac czy nie wystepuje
+
+            if status in [userPositionStatus, endPositionStatus]:
+                statusObjects = [
+                    StatusPozycji.objects.get_or_create(status=userPositionStatus)[0],
+                    StatusPozycji.objects.get_or_create(status=endPositionStatus)[0]
+                ]
+            else:
+                statusObjects = [statusObject]
+
+            position = PozycjaPunktu.objects.update_or_create(
+                klatka=frameObject,
+                status__in=statusObjects,
+                defaults={
+                    "x": x,
+                    "y": y,
+                    "status": statusObject,
+                }
+            )
             if status == endPositionStatus:
                 self.addInterpolationPosition(frameObject)
-            return JsonResponse({"positionId": position.pk})
+            return JsonResponse({"positionId": position[0].pk})
 
     def positionsAsDict(self, positions):
         if positions is None:
             return None
         if len(positions) > 0:
-            positionsArray = [{
-                                  "x": position.x,
-                                  "y": position.y,
-                                  "status": position.status.status,
-                                  "id": position.pk,
-                              } if position else None
-                              for position in positions]
+            positionsArray = [
+                {
+                    "x": position.x,
+                    "y": position.y,
+                    "status": position.status.status,
+                    "id": position.pk,
+                } if position else None
+
+                for position in positions
+            ]
             return {
                 "positions": positionsArray,
                 "frameId": positions[0].klatka.pk,
