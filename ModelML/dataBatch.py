@@ -59,7 +59,7 @@ class Data_picker:
         self.img_size = img_size
 
         self.number_of_draw = int(training_iters / epoch_size) + 1
-        self.size_of_draw = int(batch_size * epoch_size * 2) #poprawic
+        self.size_of_draw = int(batch_size * epoch_size * 2)  # poprawic
         self.size_of_draw = min(max_size_of_draw, self.size_of_draw, len(train_patches_with_positions))
 
         if randomize:
@@ -69,22 +69,25 @@ class Data_picker:
                 self.batch_functor = Get_next_batch([], batch_size, full_random=True)
             else:
                 self.load_method = \
-                    Get_next_batch(self.train_patches_with_positions, int(batch_size * epoch_size), full_random=False).get
+                    Get_next_batch(self.train_patches_with_positions, int(batch_size * epoch_size),
+                                   full_random=False).get
                 self.batch_functor = Get_next_batch([], batch_size, full_random=False)
         else:
             self.load_method = \
-                Get_next_batch(self.train_patches_with_positions, int(batch_size * epoch_size), full_random=False, randomize=False).get
+                Get_next_batch(self.train_patches_with_positions, int(batch_size * epoch_size), full_random=False,
+                               randomize=False).get
             self.batch_functor = Get_next_batch([], batch_size, full_random=False, randomize=False)
 
         if loadData:
             self.data = self.load_method()
 
     def data_batch(self, iter):
-        if not iter % self.epoch_size:
-            self.data = self.load_method()
+        if not iter % self.epoch_size: #naprawic, bo prawdopodobnie zle dziala
+            X, Y = self.return_from_patches_with_positions(self.load_method())
+            self.data = list(zip(*(X, Y)))
             self.batch_functor.data(self.data)
 
-        return self.batch_functor.get()
+        return zip(*self.batch_functor.get())
 
     def standarize(self, data):
         mean = data.mean(axis=0)
@@ -92,10 +95,11 @@ class Data_picker:
         return (data - mean) / (std + 0.00001)
 
     def return_from_patches_with_positions(self, patches_with_positions):
-        X = np.zeros([self.size_of_draw, self.img_size])
-        Y = np.zeros([self.size_of_draw, 2])
+        imgN = self.img_size[0] * self.img_size[1] * 3
+        X = np.zeros([len(patches_with_positions), imgN])
+        Y = np.zeros([len(patches_with_positions), 2])
 
-        for i, patch, position in enumerate(patches_with_positions):
+        for i, (patch, position) in enumerate(patches_with_positions):
             img = imread(patch)
             X[i, :] = img.flatten()
             Y[i, :] = position

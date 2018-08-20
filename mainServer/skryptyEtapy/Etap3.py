@@ -45,17 +45,17 @@ class DataAugmentationOrder(View):
                     .replace(":", "_").replace(".", "_")
                 dataAugmentationFolderPath = os.path.join(os.path.join(pathUp(currentPath()), 'ObrazyGotowe'),
                                                           folderName)
-            framesId = flatten([self.getMovieFrameIds(movieId) for movieId in moviesId])
+            frames = flatten([self.getMovieFrames(movieId) for movieId in moviesId])
 
-            for frameId in framesId:
-                self.addOrder(frameId, dataAugmentationCode, dataAugmentationFolderPath, expectedSize)
+            for frame in frames:
+                self.addOrder(frame, dataAugmentationCode, dataAugmentationFolderPath, expectedSize)
                 sleep(0.1)
             return JsonResponse({"folderPath": dataAugmentationFolderPath})
         except:
             raise Http404
 
     def orderToDict(self, dataAugmenationOrder):
-        positionObject = self.getUserPositionOr404(dataAugmenationOrder.klatka)
+        positionObject = self.getInterpolatedPositionOr404(dataAugmenationOrder.klatka)
         position = (positionObject.x, positionObject.y)
         expectedSize = (dataAugmenationOrder.oczekiwanyRozmiarX, dataAugmenationOrder.oczekiwanyRozmiarY)
         orderDict = {
@@ -70,23 +70,28 @@ class DataAugmentationOrder(View):
         dataAugmenationOrder.save()
         return orderDict
 
-    def getMovieFrameIds(self, movieId):
-        frames = Klatka.objects.filter(film__pk=movieId)
-        return [frame.pk for frame in frames]
+    def getMovieFrames(self, movieId):
+        frames = Klatka.objects.filter(
+            film__pk=movieId,
+            pozycja__status__status__in=[endPositionStatus, userPositionStatus, interpolatedPositonStatus]
+        ).distinct()
+        return frames
 
-    def addOrder(self, frameId, dataAugmentationCode, dataAugmentationFolderPath, expectedSize):
+    def addOrder(self, frame, dataAugmentationCode, dataAugmentationFolderPath, expectedSize):
         folder = FolderZPrzygotowanymiObrazami.objects.create(sciezka=dataAugmentationFolderPath)
         ZlecenieAugmentacji.objects.create(
-            klatka_id=frameId,
+            klatka=frame,
             kodAugmentacji=dataAugmentationCode,
             folder=folder,
             oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]
         )
 
-    def getUserPositionOr404(self, frame):
+    def getInterpolatedPositionOr404(self, frame):
         try:
-            return PozycjaPunktu.objects.get(klatka=frame,
-                                             status__status__in=[userPositionStatus, endPositionStatus])
+            return PozycjaPunktu.objects.get(
+                klatka=frame,
+                status__status__in=[interpolatedPositonStatus]
+            )
         except ObjectDoesNotExist:
             return Http404
         except:
