@@ -137,7 +137,11 @@ class FramePosition(View):
             else:
                 raise HttpResponseBadRequest
 
-        return JsonResponse(self.positionsAsDict(positionObjects))
+        positionsDict = self.positionsAsDict(positionObjects)
+        if positionsDict:
+            return JsonResponse(positionsDict)
+        else:
+            return JsonResponse({"frameId": Klatka.objects.get(film__pk=movieId, nr=frameNr).pk})
 
     def post(self, request, **kwargs):
         try:
@@ -179,7 +183,7 @@ class FramePosition(View):
                 "frameId": positions[0].klatka.pk,
             }
         else:
-            return {}
+            return False
 
     def xsAndYsFromDicts(self, dictions):
         if dictions is None:
