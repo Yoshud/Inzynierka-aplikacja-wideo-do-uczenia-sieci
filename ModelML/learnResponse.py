@@ -3,6 +3,8 @@ import os
 import requests
 import json
 from ModelML.dataBatch import Data_picker
+from ModelML.optimizerMethod import optimizeMethodDict
+from ModelML.lossMethod import lossMethodDict
 
 url = "http://localhost:8000/learn"
 
@@ -31,12 +33,36 @@ def waitForLearnOrders(data):
             return waitForLearnOrders, None
 
 
+def objectParameters(data, object):
+    objectParameters = data["parameters"]["others"][object]
+    objectType = objectParameters["type"]
+    try:
+        objectParams = objectParameters["parameters"]
+    except KeyError:
+        objectParams = {}
+    return objectType, objectParams
+
+
+def getOptimizer(data):
+    optimizerType, optimizerParams = objectParameters(data, "optimizer")
+    optimizerParams["learning_rate"] = data["parameters"]["learningRate"]
+
+    optimizer = optimizeMethodDict[optimizerType].get(**optimizerParams)
+    return optimizer
+
+
+def getLoss(data):
+    lossType, lossParams = objectParameters(data, "loss")
+    lossMethod = lossMethodDict[lossType]
+    if lossParams:
+        lossMethod.set(**lossParams)
+    return lossMethod.get
+
+
 def processLearnOrder(data):
     data_picker = Data_picker(4, 2, 10, (320, 320), *data["sets"])
-    X, Y = data_picker.data_batch(0)
-    X1, y1 = data_picker.data_batch(1)
-    X2, y2 = data_picker.data_batch(2)
-    X3, y3 = data_picker.data_batch(3)
+    optimizer = getOptimizer(data)
+    lossMethod = getLoss(data)
     sendingRequest()
     return waitForLearnOrders, None
 
