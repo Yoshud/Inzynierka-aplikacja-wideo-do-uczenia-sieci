@@ -90,14 +90,14 @@ class Learn(View):
     def parametersToDict(self, learnObject):
         parameters = learnObject.parametry
         return {
-            "learningRate": parameters.learning_rate,
-            "batchSize": parameters.batch_size,
+            "learning_rate": parameters.learning_rate,
+            "_batch_size": parameters.batch_size,
             "dropout": parameters.dropout,
-            "numbersOfIters": parameters.iloscIteracji,
-            "epochSize": parameters.epochSize,
-            "saveStep": parameters.saveStep,
+            "_training_iters": parameters.iloscIteracji,
+            "_epoch_size": parameters.epochSize,
+            "save_step": parameters.saveStep,
             "network": json.loads(parameters.modelSieci.opisXML),
-            "imgSizeX": parameters.modelSieci.inputSizeX,
-            "imgSizeY": parameters.modelSieci.inputSizeY,
+            "img_size_x": parameters.modelSieci.inputSizeX,
+            "img_size_y": parameters.modelSieci.inputSizeY,
             "others": json.loads(parameters.opisUczeniaXML),
         }
