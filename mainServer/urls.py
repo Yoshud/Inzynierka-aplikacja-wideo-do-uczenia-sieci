@@ -16,4 +16,5 @@ urlpatterns = [
     path('imageAfterDataAugmentation', views.imageAfterDataAugmentationView, name='imageAfterDataAugmentation'),
     path('divideIntoSets', views.divideIntoSetsView, name='divideIntoSets'),
     path('learn', views.learnView, name='learn'),
+    path('neuralNetworks', views.neuralNetworksView, name='neuralNetworks'),
 ]

@@ -132,3 +132,24 @@ class ImageAfterDataAugmentation(View):
             obraz=image, status=status,
             x=int(float(pointPosition[0])), y=int(float(pointPosition[1]))
         )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class NeuralNetworks(View):
+    def get(self, request, **kwargs):
+        networks = Sieci.objects.all()
+        responseDict = {
+            "networks": [self.networkToDict(network) for network in networks]
+        }
+
+        return JsonResponse(responseDict)
+
+    @classmethod
+    def networkToDict(cls, network):
+        return {
+            "x": network.inputSizeX,
+            "y": network.inputSizeY,
+            "name": "Network nr. {}".format(network.pk),
+            "id": network.pk,
+            "description": network.opisXML
+        }

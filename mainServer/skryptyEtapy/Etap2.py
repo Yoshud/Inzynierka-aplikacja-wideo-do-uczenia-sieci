@@ -4,19 +4,13 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import Http404, HttpResponseServerError, HttpResponseBadRequest
-from mainServer.models import *
 from mainServer.skryptyEtapy.helpersMethod import *
-from wsgiref.util import FileWrapper
 from django.http import HttpResponse
 from scipy.interpolate import interp1d
-# from copy import copy
 import json
-import os
 from functools import reduce
-from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from time import sleep
-import numpy as np
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -95,9 +89,13 @@ class GetNextMovie(View):
                 nextMovie.status.add(statusToAdd)
             except IndexError:
                 movieCount = Film.objects \
-                    .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania"]).count()
+                    .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania", "Do przetworzenia"])\
+                    .count()
 
-                return JsonResponse({"count": movieCount}, status=400)
+                if movieCount:
+                    return JsonResponse({"count": movieCount}, status=400)
+                else:
+                    raise Http404
 
         return JsonResponse({
             "movieId": nextMovie.pk,
@@ -227,7 +225,6 @@ class FramePosition(View):
         return xs, ys
 
     def findLastFrameWithEndStatusOrNone(self, frame):
-        # frame = Klatka.objects.get(pk=frameId)
         movieId = frame.film.pk
         ordererFramesWithEndStatus = Klatka.objects \
             .filter(film__pk=movieId, nr__lt=frame.nr, pozycja__status__status__in=[endPositionStatus, ]) \
@@ -249,7 +246,6 @@ class FramePosition(View):
         return startFrame
 
     def findAllFramesFromStartToEnd(self, frame):
-        # frame = Klatka.objects.get(pk=frameId)
         startFrame = self.findStartFrame(frame)
         return Klatka.objects.filter(film=startFrame.film, nr__gte=startFrame.nr, nr__lte=frame.nr)
 
@@ -260,9 +256,6 @@ class FramePosition(View):
                                                  status__status__in=[userPositionStatus, endPositionStatus])
             except ObjectDoesNotExist:
                 return None
-            # except:
-            #     raise HttpResponseServerError
-
         positions = [
             getUserPositionOrNone(frame)
             for frame in framesFromStartToEnd]
