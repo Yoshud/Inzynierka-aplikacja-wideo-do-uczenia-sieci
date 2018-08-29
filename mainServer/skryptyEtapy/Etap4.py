@@ -91,10 +91,10 @@ class Learn(View):
         parameters = learnObject.parametry
         return {
             "learning_rate": parameters.learning_rate,
-            "_batch_size": parameters.batch_size,
+            "batch_size": parameters.batch_size,
             "dropout": parameters.dropout,
-            "_training_iters": parameters.iloscIteracji,
-            "_epoch_size": parameters.epochSize,
+            "training_iters": parameters.iloscIteracji,
+            "epoch_size": parameters.epochSize,
             "save_step": parameters.saveStep,
             "network": json.loads(parameters.modelSieci.opisXML),
             "img_size_x": parameters.modelSieci.inputSizeX,

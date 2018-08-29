@@ -4,18 +4,24 @@ from scipy.misc import imread
 
 
 class Get_next_batch:
-    def __init__(self, data, batch_size, full_random, start_point=0, randomize=True):
+    def __init__(self, data, batch_size, full_random=True, start_point=0, randomize=True, without_loop=False):
         self._batch_size = batch_size
         self._full_random = full_random
         self._randomize = randomize
         data = np.array(data, dtype=object)
-        if full_random:
+
+        if without_loop:
             self._data = data
-            self._method = self.get_random_batch
-        else:
-            self._data = np.random.permutation(data) if randomize else data
             self._start_point = start_point
-            self._method = self.get_modulo
+            self._method = self.get_normal
+        else:
+            if full_random:
+                self._data = data
+                self._method = self.get_random_batch
+            else:
+                self._data = np.random.permutation(data) if randomize else data
+                self._start_point = start_point
+                self._method = self.get_modulo
 
     def get_normal(self):
         end_point = (self._start_point + self._batch_size)
@@ -78,19 +84,22 @@ class Data_picker:
                                randomize=False).get
             self._batch_functor = Get_next_batch([], batch_size, full_random=False, randomize=False)
 
+        self._test_load_functor = \
+            Get_next_batch(test_patches_with_positions, int(batch_size), without_loop=True).get
+
         if loadData:
             self._data = self._load_method()
 
     def data_batch(self, iter):
-        if not iter % self._epoch_size: #naprawic, bo prawdopodobnie zle dziala
+        if not iter % self._epoch_size:  # naprawic, bo prawdopodobnie zle dziala
             X, Y = self._return_from_patches_with_positions(self._load_method())
             self._data = list(zip(*(X, Y)))
             self._batch_functor.data(self._data)
 
         return zip(*self._batch_functor.get())
 
-    def test_batch(self, iter):
-        pass
+    def test_batch(self):
+        return self._return_from_patches_with_positions(self._test_load_functor())
 
     def _standarize(self, data):
         mean = data.mean(axis=0)
