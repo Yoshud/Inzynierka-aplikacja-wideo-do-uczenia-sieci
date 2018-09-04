@@ -23,6 +23,7 @@ deletePositionView = etap2.DeletePosition.as_view()
 dataAugmentationOrderView = etap3.DataAugmentationOrder.as_view()
 imageAfterDataAugmentationView = etap3.ImageAfterDataAugmentation.as_view()
 neuralNetworksView = etap3.NeuralNetworks.as_view()
+parametersMethodsArgumentsView = etap3.ParametersMethodsArguments.as_view()
 
 divideIntoSetsView = etap4.DivideIntoSets.as_view()
 learnView = etap4.Learn.as_view()

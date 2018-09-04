@@ -7,7 +7,8 @@ from mainServer.skryptyEtapy.helpersMethod import *
 import json
 import os
 from time import sleep
-
+from ModelML.optimizerMethod import *
+from ModelML.lossMethod import *
 
 @method_decorator(csrf_exempt, name='dispatch')
 class DataAugmentationOrder(View):
@@ -149,4 +150,26 @@ class NeuralNetworks(View):
             "name": "Network nr. {}".format(network.pk),
             "id": network.pk,
             "description": network.opisXML
+        }
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ParametersMethodsArguments(View):
+    def get(self, request, **kwargs):
+        return JsonResponse({
+            "loss": self.lossMethodParameters(),
+            "optimize": self.optymizeMethodParameters(),
+        })
+
+    @staticmethod
+    def optymizeMethodParameters():
+        return {
+            key: {"requirements": methodObject.requirements, "optional": methodObject.optional}
+            for key, methodObject in optimizeMethodDict.items()
+        }
+
+    @staticmethod
+    def lossMethodParameters():
+        return {
+            key: {"parameters": methodObject.parameters}
+            for key, methodObject in lossMethodDict.items()
         }

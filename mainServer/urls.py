@@ -18,4 +18,5 @@ urlpatterns = [
     path('learn', views.learnView, name='learn'),
     path('neuralNetworks', views.neuralNetworksView, name='neuralNetworks'),
     path('learnResults', views.learnResultsView, name='learnResults'),
+    path('parametersMethodsArguments', views.parametersMethodsArgumentsView, name='parametersMethodsArguments'),
 ]

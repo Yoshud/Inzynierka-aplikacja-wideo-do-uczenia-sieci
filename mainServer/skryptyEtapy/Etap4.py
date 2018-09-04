@@ -123,6 +123,3 @@ class LearnResults(JsonView):
 
     def get_method(self):
         pass
-
-
-
