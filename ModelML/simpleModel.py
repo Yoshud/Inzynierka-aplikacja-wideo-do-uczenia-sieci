@@ -3,6 +3,7 @@ from ModelML.dataBatch import Data_picker
 from functools import reduce
 import tensorflow as tf
 import datetime as dt
+import json
 
 # standaryzation
 def standarize(data):
@@ -102,7 +103,6 @@ def test_model(sess: tf.Session, data_picker: Data_picker, batch_size, pred, x, 
     errors = []
     test_batch_x, test_batch_y = data_picker.test_batch()
     while len(test_batch_x):
-        print(len(test_batch_x))
         it = 0
         for model_out, y_exp in zip(sess.run(pred, feed_dict={x: test_batch_x, keep_prob: 1.}), test_batch_y):
             error = np.mean(np.sqrt(np.sum(np.square(model_out - y_exp))))
@@ -113,13 +113,21 @@ def test_model(sess: tf.Session, data_picker: Data_picker, batch_size, pred, x, 
 
         test_batch_x, test_batch_y = data_picker.test_batch()
 
-    print("Mean error: {}, std: {}, max: {}".format(np.mean(errors), np.std(errors), np.max(errors)))
-
-    return errors
+    mean_error = np.mean(errors)
+    std_error = np.std(errors)
+    max_error = np.max(errors)
+    print("Mean error: {}, std: {}, max: {}".format(mean_error, std_error, max_error))
+    result = {
+        "errors": json.dumps(errors),
+        "mean": mean_error,
+        "std": std_error,
+        "max": max_error,
+    }
+    return result
 
 
 def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout, conv_networks_dicts,
-          full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, channels=3, **kwargs):
+          full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, model_file: str, channels=3, **kwargs):
     n_input = img_size_x * img_size_y
 
     # tf graph input, output...
@@ -134,13 +142,13 @@ def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_siz
                  img_size_y, channels)
 
     loss = loss_fun(pred, y)
-    loss_2 = tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.square(pred - y), 1)))
+    # loss_2 = tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.square(pred - y), 1)))
     optimizer = optimizer_type.minimize(loss)
 
     init = tf.global_variables_initializer()
     losses = list()
     saver = tf.train.Saver()
-    model_file = "./modele/first/model.cktp"
+    # model_file = "./modele/first/model.cktp"
 
     with tf.Session() as sess:
         sess.run(init)
@@ -169,4 +177,4 @@ def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_siz
         end_epoch = dt.datetime.now()
         print("Optimization Finished, end={} duration={}".format(end_epoch, end_epoch - start_epoch))
 
-        return test_model(sess, data_picker, batch_size, pred, x, keep_prob), model_file
+        return {**test_model(sess, data_picker, batch_size, pred, x, keep_prob), **{"model_file": model_file}}

@@ -12,14 +12,18 @@ def index(request):
 
 getObjectsFromPathView = etap1.GetObjectsFromPath.as_view()
 addMovieView = etap1.AddMovie.as_view()
+
 returnMoviesToProcessView = etap2.ReturnMoviesToProcess.as_view()
 movieProcessedView = etap2.MovieProcessed.as_view()
 getNextMovieView = etap2.GetNextMovie.as_view()
 getFrameView = etap2.GetFrame.as_view()
 framePositionsView = etap2.FramePosition.as_view()
 deletePositionView = etap2.DeletePosition.as_view()
+
 dataAugmentationOrderView = etap3.DataAugmentationOrder.as_view()
 imageAfterDataAugmentationView = etap3.ImageAfterDataAugmentation.as_view()
+neuralNetworksView = etap3.NeuralNetworks.as_view()
+
 divideIntoSetsView = etap4.DivideIntoSets.as_view()
 learnView = etap4.Learn.as_view()
-neuralNetworksView = etap3.NeuralNetworks.as_view()
+learnResultsView = etap4.LearnResults.as_view()

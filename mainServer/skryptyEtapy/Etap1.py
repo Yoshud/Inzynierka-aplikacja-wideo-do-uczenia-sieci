@@ -1,12 +1,6 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-import os
-from django.views.generic import View
-from os import walk
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.http import Http404
 from mainServer.skryptyEtapy.helpersMethod import *
 import cv2
 import datetime
@@ -71,11 +65,23 @@ class AddMovie(View):
         now = timezone.now()
         sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
         sessionPath = data.get('toFolderPath', '')
-        sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Obrazy'), sessionName) \
+        sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Sesje'), sessionName) \
             if sessionPath == '' else sessionPath
-        imageFolder = FolderZObrazami(sciezka=sessionPath)
+        imagesPath = os.path.join(sessionPath, 'Obrazy')
+        modelsPath = os.path.join(sessionPath, 'Modele')
+        processedPath = os.path.join(sessionPath, 'Przygotowane')
+
+        imageFolder = FolderZObrazami(sciezka=imagesPath)
         imageFolder.save()
-        session = Sesja(nazwa=sessionName, folderZObrazami=imageFolder)
+        modelsFolder = FolderModele.objects.create(sciezka=modelsPath)
+        processedFolder = FoldeZPrzetworzonymiObrazami.objects.create(sciezka=processedPath)
+
+        session = Sesja(
+            nazwa=sessionName,
+            folderZObrazami=imageFolder,
+            folderModele=modelsFolder,
+            folderPrzetworzone=processedFolder
+        )
         session.save()
         request.session["sessionPk"] = session.pk
         if files:

@@ -8,10 +8,14 @@ from ModelML.optimizerMethod import optimizeMethodDict
 from ModelML.lossMethod import lossMethodDict
 
 url = "http://localhost:8000/learn"
+urlResponse = "http://localhost:8000/learnResults"
 
 
-def sendingRequest():
-    pass
+def sendingRequest(results):
+    r = requests.post(urlResponse, data=json.dumps(results))
+    if r.json()["ok"]:
+        return True
+    return False
 
 
 def checkForOrderToProcess():
@@ -19,7 +23,8 @@ def checkForOrderToProcess():
     json = r.json()
     return {
         "sets": (json["trainSet"], json["testSet"]),
-        "parameters": json["parameters"]
+        "parameters": json["parameters"],
+        "learn_id": json["learn_id"],
     } if len(json["trainSet"]) > 0 else False
 
 
@@ -70,8 +75,9 @@ def processLearnOrder(data):
     optimizer = getOptimizer(data)
     lossMethod = getLoss(data)
     parameters = getDataParameters(data)
-    train(optimizer_type=optimizer, loss_fun=lossMethod, data_picker=data_picker, **parameters)
-    sendingRequest()
+    learn_id = data["learn_id"]
+    results = train(optimizer_type=optimizer, loss_fun=lossMethod, data_picker=data_picker, **parameters)
+    sendingRequest({"result": results, "learn_id": learn_id})
     return waitForLearnOrders, None
 
 

@@ -1,5 +1,4 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.views.generic import View
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -7,9 +6,7 @@ from django.http import Http404, HttpResponseServerError
 from mainServer.skryptyEtapy.helpersMethod import *
 import json
 import os
-from functools import reduce
 from time import sleep
-import numpy as np
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -39,12 +36,12 @@ class DataAugmentationOrder(View):
             try:
                 dataAugmentationFolderPath = data["toSaveFolderPath"]
             except KeyError:
+                processedPath = session.folderPrzetworzone.sciezka
                 now = timezone.now()
-                folderName = "{}_dataAugmentation_{}_{}" \
-                    .format(session.nazwa, now.date(), now.time()) \
+                folderName = "dataAugmentation_{}_{}" \
+                    .format(now.date(), now.time()) \
                     .replace(":", "_").replace(".", "_")
-                dataAugmentationFolderPath = os.path.join(os.path.join(pathUp(currentPath()), 'ObrazyGotowe'),
-                                                          folderName)
+                dataAugmentationFolderPath = os.path.join(processedPath, folderName)
             frames = flatten([self.getMovieFrames(movieId) for movieId in moviesId])
 
             for frame in frames:

@@ -17,4 +17,5 @@ urlpatterns = [
     path('divideIntoSets', views.divideIntoSetsView, name='divideIntoSets'),
     path('learn', views.learnView, name='learn'),
     path('neuralNetworks', views.neuralNetworksView, name='neuralNetworks'),
+    path('learnResults', views.learnResultsView, name='learnResults'),
 ]

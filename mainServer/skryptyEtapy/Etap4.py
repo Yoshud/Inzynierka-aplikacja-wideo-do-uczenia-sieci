@@ -1,9 +1,8 @@
-from django.core.exceptions import ObjectDoesNotExist
-from django.views.generic import View
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import Http404, HttpResponseServerError, HttpResponseBadRequest
+from pathlib import Path
 from mainServer.skryptyEtapy.helpersMethod import *
 import json
 import os
@@ -65,7 +64,7 @@ class Learn(View):
         learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId)
         return JsonResponse({"learnId": learnObject.pk})
 
-    def get(self, request, **kwargs):  # dostosowac by dodac do sieci infomracje o wejsciu sieci i poloczyc z tym augmentacje
+    def get(self, request, **kwargs):
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
             parameters = self.parametersToDict(learnObject)
@@ -74,7 +73,9 @@ class Learn(View):
                 "validatorSet": self.setData(learnObject.parametry.zbiory.walidacyjny),
                 "testSet": self.setData(learnObject.parametry.zbiory.testowy),
                 "parameters": parameters,
+                "learn_id": learnObject.pk,
             }
+            learnObject.statusNauki = 'T'
         except:
             raise Http404
         return JsonResponse(responseData)
@@ -89,7 +90,10 @@ class Learn(View):
 
     def parametersToDict(self, learnObject):
         parameters = learnObject.parametry
-        return {
+        pathToCreate = Path(os.path.join(parameters.zbiory.sesja.folderModele.sciezka, "model_{}".format(learnObject.pk)))
+        pathToCreate.mkdir(parents=True, exist_ok=True)
+
+        return { # nie zmieniac kluczy gdyz uzywane później(learnResponse) jako **kwargs dla funkcji
             "learning_rate": parameters.learning_rate,
             "batch_size": parameters.batch_size,
             "dropout": parameters.dropout,
@@ -99,5 +103,26 @@ class Learn(View):
             "network": json.loads(parameters.modelSieci.opisXML),
             "img_size_x": parameters.modelSieci.inputSizeX,
             "img_size_y": parameters.modelSieci.inputSizeY,
+            "model_file": os.path.join(parameters.zbiory.sesja.folderModele.sciezka, "model_{}".format(learnObject.pk)),
             "others": json.loads(parameters.opisUczeniaXML),
         }
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class LearnResults(JsonView):
+    def post_method(self):
+        data = self._data
+        learn_result = WynikUczenia.objects.create(**data["result"])
+
+        learn_object = Uczenie.objects.get(pk=data["learn_id"])
+        learn_object.wynik=learn_result
+        learn_object.statusNauki='K'
+        learn_object.save()
+
+        return JsonResponse({"ok": True})
+
+    def get_method(self):
+        pass
+
+
+

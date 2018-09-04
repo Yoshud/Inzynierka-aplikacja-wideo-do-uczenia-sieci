@@ -71,6 +71,12 @@ class FolderZObrazami(models.Model):
 class FolderZPrzygotowanymiObrazami(models.Model):
     sciezka = models.TextField(default="")
 
+class FoldeZPrzetworzonymiObrazami(models.Model):
+    sciezka = models.TextField(default="")
+
+class FolderModele(models.Model):
+    sciezka = models.TextField(default="")
+
 
 class ObrazPoDostosowaniu(models.Model):
     FLIP_V = 'V'
@@ -143,15 +149,17 @@ class Uczenie(
     )
     statusNauki = models.CharField(max_length=1, choices=STATUS_UCZENIA, default='N')
     opis = models.TextField(blank=True, null=True)
-    wynik = models.OneToOneField("WynikUczenia", blank=True, null=True, on_delete=models.CASCADE)
+    wynik = models.OneToOneField("WynikUczenia", related_name="learn", blank=True, null=True, on_delete=models.CASCADE)
     parametry = models.ForeignKey("ParametryUczenia", on_delete=models.CASCADE)
 
 
 class WynikUczenia(models.Model):
-    sciezkaDoSieci = models.TextField()
+    model_file = models.TextField()
     mean = models.FloatField(default=0.0, blank=True, null=True)
     std = models.FloatField(default=0.0, blank=True, null=True)
-    minMeanWTrakcieNauki = models.FloatField(default=0.0, blank=True, null=True)
+    max = models.FloatField(default=0.0, blank=True, null=True)
+    errors = models.TextField(default="", blank=True, null=True)
+    min_mean_during_learning = models.FloatField(default=0.0, blank=True, null=True)
     histogram = models.ImageField(blank=True, null=True)
 
 
@@ -175,6 +183,8 @@ class Sesja(models.Model):
     folderZObrazami = models.OneToOneField("FolderZObrazami", on_delete=models.CASCADE)
     filmyPrzetworzone = models.ManyToManyField("Film", related_name="sesjaPrzetworzone", blank=True)
     filmyUzytkownik = models.ManyToManyField("Film", related_name="sesjaUzytkownika", blank=True)
+    folderPrzetworzone = models.OneToOneField("FoldeZPrzetworzonymiObrazami", on_delete=models.CASCADE, blank=True, null=True)
+    folderModele = models.OneToOneField("FolderModele", on_delete=models.CASCADE, blank=True, null=True)
     data = models.DateTimeField(default=timezone.now)
     nazwa = models.TextField(default="Nienazwana_{}".format(timezone.now()))
     ostatniaAktualizacja = models.DateTimeField(default=timezone.now)
