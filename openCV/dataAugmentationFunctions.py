@@ -28,18 +28,14 @@ def cropAndResizeNewPointPosition(pointPosition, cropPosition, imgShape, expecte
     return positionTowardLeftTopCorner
 
 
-# def flipHorizontal(img, position, path, fileNameWithoutSufix):
 def flipHorizontal(img, position):
     flipped = cv2.flip(img, 1)
     return flipped, flipPointPosition(position, img.shape, 1)
-    # saveFile(path, fileNameWithoutSufix, 'flipH', fliped)
 
 
-# def flipVertical(img, position, path, fileNameWithoutSufix):
 def flipVertical(img, position):
     flipped = cv2.flip(img, 0)
     return flipped, flipPointPosition(position, img.shape, 0)
-    # saveFile(path, fileNameWithoutSufix, 'flipV', fliped)
 
 
 def crop(img, height, width, x0=-1, y0=-1):
@@ -79,10 +75,6 @@ def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
 
 
 def process2(paths, pathToSave, fileNames):
-    # zwraca: frameId, wsp_crop, pozycjaCrop, pozycjaPunkt
-    # otrzymuje sciezke do obrazu, sciezke do zapisu, pozycje punktu, kod augmentacji, oczekiwany rozmiar koncowy, ma utworzyc nazwe i zapisac
-    # reduce: zzipowane(funkcja, kodAugmentacji), retImgs(img, kodMetody, wspCrop, pozycjaCrop, pozycjaPunkt)
-    # retImgs - tablica dict
     pathToCreate = Path(pathToSave)
     pathToCreate.mkdir(parents=True, exist_ok=True)
     frameInfo = []
@@ -108,11 +100,11 @@ def resizeScale(imgHeight, expectedSize, cropScale=0.8):
 
 
 def flipVerticalToReduce(augmentationCode, imgsDict):
-    return flipToReduce(flipVertical, "flipV", augmentationCode, imgsDict)
+    return flipToReduce(flipVertical, "V", augmentationCode, imgsDict)
 
 
 def flipHorizontalToReduce(augmentationCode, imgsDict):
-    return flipToReduce(flipHorizontal, "flipH", augmentationCode, imgsDict)
+    return flipToReduce(flipHorizontal, "H", augmentationCode, imgsDict)
 
 
 class RandomCropFunctor:
@@ -146,7 +138,7 @@ def process(path, pointPosition, augmentationCode, expectedSize):
     imgsDict = [{
         "img": img,
         "position": pointPosition,
-        "methodCode": "orginal",
+        "methodCode": "O",
     }, ]
     augmentationCodeStr = str(augmentationCode)[1:]
     functionsWithCode = list(zip(functions, augmentationCodeStr))
