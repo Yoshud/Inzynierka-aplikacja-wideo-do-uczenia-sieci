@@ -1,0 +1,9 @@
+django
+tensorflow
+numpy==1.14.5
+opencv-python
+requests
+scipy
+django-cors-headers==2.4.0
+psycopg2
+Pillow
