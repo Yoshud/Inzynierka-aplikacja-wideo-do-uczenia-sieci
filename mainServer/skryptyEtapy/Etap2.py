@@ -124,7 +124,9 @@ class FramePosition(View):
         movieId = request.GET.get('movieId', False)
         frameNr = request.GET.get("frameNr", False)
         if movieId and frameNr:
-            positionObjects = PozycjaPunktu.objects.filter(klatka__film__pk=movieId, klatka__nr=frameNr)
+            frame = Klatka.objects.get(film__pk=movieId, nr=frameNr)
+            positionObjects = PozycjaPunktu.objects.filter(klatka=frame)
+            frameId = frame.pk
         else:
 
             frameId = request.GET.get("frameId", False)
@@ -133,9 +135,9 @@ class FramePosition(View):
             else:
                 raise HttpResponseBadRequest
 
-        positionsDict = self.positionsAsDict(positionObjects)
-        if positionsDict:
-            return JsonResponse(positionsDict)
+        positions = self.positionsAsDict(positionObjects)
+        if positions:
+            return JsonResponse({"positions": positions, "frameId": frameId})
         else:
             return JsonResponse({"frameId": Klatka.objects.get(film__pk=movieId, nr=frameNr).pk})
 
@@ -156,28 +158,32 @@ class FramePosition(View):
         except:
             raise Http404
         finally:
-            statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
-
-            if status in [userPositionStatus, endPositionStatus]:
-                statusObjects = [
-                    StatusPozycji.objects.get_or_create(status=userPositionStatus)[0],
-                    StatusPozycji.objects.get_or_create(status=endPositionStatus)[0]
-                ]
-            else:
-                statusObjects = [statusObject]
-
-            position = PozycjaPunktu.objects.update_or_create(
-                klatka=frameObject,
-                status__in=statusObjects,
-                defaults={
-                    "x": x,
-                    "y": y,
-                    "status": statusObject,
-                }
-            )
+            position = self._addPosition(status, x, y, frameObject)
             if status == endPositionStatus:
                 self.addInterpolationPosition(frameObject)
             return JsonResponse({"positionId": position[0].pk})
+
+    def _addPosition(self, status, x, y, frameObject):
+        statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
+
+        if status in [userPositionStatus, endPositionStatus]:
+            statusObjects = [
+                StatusPozycji.objects.get_or_create(status=userPositionStatus)[0],
+                StatusPozycji.objects.get_or_create(status=endPositionStatus)[0]
+            ]
+        else:
+            statusObjects = [statusObject]
+
+        position = PozycjaPunktu.objects.update_or_create(
+            klatka=frameObject,
+            status__in=statusObjects,
+            defaults={
+                "x": x,
+                "y": y,
+                "status": statusObject,
+            }
+        )
+        return position
 
     def positionsAsDict(self, positions):
         if positions is None:
@@ -193,10 +199,7 @@ class FramePosition(View):
 
                 for position in positions
             ]
-            return {
-                "positions": positionsArray,
-                "frameId": positions[0].klatka.pk,
-            }
+            return positionsArray
         else:
             return False
 
@@ -270,17 +273,11 @@ class FramePosition(View):
 
     def addInterpolationPosition(self, frame):
         frames = self.findAllFramesFromStartToEnd(frame)
-        # out = self.userPositionsXsYsInfo(frames)
         xs, ys = self.userPositionsXsYsInfo(frames)
         interpolatedXs = self.interpolate(xs)
         interpolatedYs = self.interpolate(ys)
         for x, y, frame in zip(interpolatedXs, interpolatedYs, frames):
-            status = StatusPozycji.objects.get_or_create(status=interpolatedPositonStatus)[0]
-            newPosition = PozycjaPunktu.objects.create(
-                x=x,
-                y=y,
-                status=status,
-                klatka=frame)
+            self._addPosition(interpolatedPositonStatus, x, y, frame)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
