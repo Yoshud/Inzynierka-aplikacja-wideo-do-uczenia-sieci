@@ -1,31 +1,28 @@
 import time
-import os
-import requests
-import json
 from ModelML.simpleModel import train
 from ModelML.dataBatch import Data_picker
 from ModelML.optimizerMethod import optimizeMethodDict
 from ModelML.lossMethod import lossMethodDict
+from internalConnection.InternalConnection import InternalConnection
 
 url = "http://localhost:8000/learn"
 urlResponse = "http://localhost:8000/learnResults"
-
+connection = InternalConnection(url, urlResponse)
 
 def sendingRequest(results):
-    r = requests.post(urlResponse, data=json.dumps(results))
-    if r.json()["ok"]:
-        return True
-    return False
+    return connection.sendResponse(results)
 
 
 def checkForOrderToProcess():
-    r = requests.get(url)
-    json = r.json()
-    return {
-        "sets": (json["trainSet"], json["testSet"]),
-        "parameters": json["parameters"],
-        "learn_id": json["learn_id"],
-    } if len(json["trainSet"]) > 0 else False
+    json = connection.getData()
+    if json:
+        return {
+            "sets": (json["trainSet"], json["testSet"]),
+            "parameters": json["parameters"],
+            "learn_id": json["learn_id"],
+        } if len(json["trainSet"]) > 0 else False
+    else:
+        return False
 
 
 def waitForLearnOrders(data):

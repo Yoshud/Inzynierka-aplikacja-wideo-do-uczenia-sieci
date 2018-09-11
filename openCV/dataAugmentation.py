@@ -1,13 +1,13 @@
 import time
 import os
-import requests
 from openCV.dataAugmentationFunctions import process
-import json
 import cv2
 from pathlib import Path
+from internalConnection.InternalConnection import InternalConnection
 
 url = "http://localhost:8000/dataAugmentationOrder"
 urlResponse = "http://localhost:8000/imageAfterDataAugmentation"
+connection = InternalConnection(url, urlResponse)
 
 
 def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode, orderId):
@@ -20,16 +20,15 @@ def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, toImagePat
         "methodCode": methodCode,
         "orderId": orderId,
     }
-    r = requests.post(urlResponse, data=json.dumps(payload))
-    if r.json()["ok"]:
-        return True
-    return False
+    return connection.sendResponse(payload)
 
 
 def checkForOrderToProcess():
-    r = requests.get(url)
-    json = r.json()
-    return json["orders"] if len(json["orders"]) > 0 else False
+    json = connection.getData()
+    if json:
+        return json["orders"] if len(json["orders"]) > 0 else False
+    else:
+        return False
 
 
 def waitForOrders(data):

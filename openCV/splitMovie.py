@@ -1,12 +1,11 @@
 import time
-import os
-import requests
 # from openCV.main import process
 from openCV.processFilm import process
-import json
+from internalConnection.InternalConnection import InternalConnection
 
 url = "http://localhost:8000/returnMoviesToProcess"
 urlResponse = "http://localhost:8000/movieProcessed"
+connection = InternalConnection(url, urlResponse)
 
 
 def sendingRequest(movieId, frames):
@@ -14,15 +13,15 @@ def sendingRequest(movieId, frames):
         "movieId": movieId,
         "frames": frames,
     }
-    r = requests.post(urlResponse, data=json.dumps(payload))
-    if r.json()["ok"]:
-        return True
-    return False
+    return connection.sendResponse(payload)
+
 
 def checkForFilmToProcess():
-    r = requests.post(url)
-    json = r.json()
-    return json["movies"] if len(json["movies"]) > 0 else False
+    json = connection.getData()
+    if json:
+        return json["movies"] if len(json["movies"]) > 0 else False
+    return False
+
 
 def waitForMovies(data):
     while 1:

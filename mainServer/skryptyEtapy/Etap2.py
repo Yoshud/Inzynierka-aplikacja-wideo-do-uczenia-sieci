@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ReturnMoviesToProcess(View):
-    def post(self, request, **kwargs):
+    def get(self, request, **kwargs):
         movies = Film.objects \
                      .filter(status__status__in=["Do przetworzenia"])[:5]
         moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
