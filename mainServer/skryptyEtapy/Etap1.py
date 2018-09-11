@@ -9,9 +9,6 @@ from django.utils import timezone
 import json
 
 
-
-
-
 @method_decorator(csrf_exempt, name='dispatch')
 class GetObjectsFromPath(View):
     def get(self, request, **kwargs):

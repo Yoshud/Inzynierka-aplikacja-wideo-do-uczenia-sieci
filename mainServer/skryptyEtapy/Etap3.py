@@ -6,7 +6,6 @@ from django.http import Http404, HttpResponseServerError
 from mainServer.skryptyEtapy.helpersMethod import *
 import json
 import os
-from time import sleep
 from ModelML.optimizerMethod import *
 from ModelML.lossMethod import *
 
@@ -47,7 +46,7 @@ class DataAugmentationOrder(View):
 
             for frame in frames:
                 self.addOrder(frame, dataAugmentationCode, dataAugmentationFolderPath, expectedSize)
-                sleep(0.1)
+
             return JsonResponse({"folderPath": dataAugmentationFolderPath})
         except:
             raise Http404

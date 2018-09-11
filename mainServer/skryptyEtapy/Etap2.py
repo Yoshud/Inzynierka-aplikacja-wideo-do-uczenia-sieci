@@ -9,7 +9,6 @@ from scipy.interpolate import interp1d
 import json
 from functools import reduce
 from django.core.exceptions import ObjectDoesNotExist
-from time import sleep
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -55,7 +54,7 @@ class MovieProcessed(View):
         for frameInfo in frames:
             frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], film=movie)
             frame.save()
-            sleep(0.1)
+
         print(movie.nazwa)
 
 
@@ -88,7 +87,7 @@ class GetNextMovie(View):
                 nextMovie.status.add(statusToAdd)
             except IndexError:
                 movieCount = Film.objects \
-                    .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania", "Do przetworzenia"])\
+                    .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania", "Do przetworzenia"]) \
                     .count()
 
                 if movieCount:
@@ -255,6 +254,7 @@ class FramePosition(View):
                                                  status__status__in=[userPositionStatus, endPositionStatus])
             except ObjectDoesNotExist:
                 return None
+
         positions = [
             getUserPositionOrNone(frame)
             for frame in framesFromStartToEnd]
@@ -281,7 +281,6 @@ class FramePosition(View):
                 y=y,
                 status=status,
                 klatka=frame)
-            sleep(0.01)  # prevent from locking database in sqlite
 
 
 @method_decorator(csrf_exempt, name='dispatch')
