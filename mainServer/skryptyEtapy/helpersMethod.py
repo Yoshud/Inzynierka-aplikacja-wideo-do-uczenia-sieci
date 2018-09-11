@@ -1,5 +1,6 @@
 import json
-from django.http import HttpResponseBadRequest
+from functools import wraps
+from django.http import HttpResponseBadRequest, HttpResponseServerError
 from mainServer.models import *
 import os
 from os import walk
@@ -10,6 +11,24 @@ from abc import ABC, abstractmethod
 endPositionStatus = "Koniec"
 userPositionStatus = "Dodane uzytkownik"
 interpolatedPositonStatus = "Interpolacja"
+
+
+class MyError(Exception):
+    def __init__(self, errorClass):
+        self.errorClass = errorClass
+
+
+def django_exceptions(view_func):
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        try:
+            return view_func(*args, **kwargs)
+        except MyError as e:
+            return e.errorClass
+        except Exception as e:
+            return HttpResponseServerError(str(e))
+
+    return wrapper
 
 
 def filterFilms(files):
@@ -72,10 +91,13 @@ class JsonView(View, ABC):
     def get_method(self):
         pass
 
+    @django_exceptions
     def get(self, request, **kwargs):
         self._data = None
         self._request = request
+        return self.get_method()
 
+    @django_exceptions
     def post(self, request, **kwargs):
         self._data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         self._request = request
@@ -90,7 +112,7 @@ class JsonView(View, ABC):
         else:
             return self._request.GET.get(key, default)
 
-    def _get_data_or_error(self, key, error=HttpResponseBadRequest):
+    def _get_data_or_error(self, key, error=HttpResponseBadRequest()):
         if self._data:
             try:
                 return self._data[key]
@@ -99,6 +121,6 @@ class JsonView(View, ABC):
         else:
             data = self._request.GET.get(key, None)
             if not data:
-                raise error
+                raise MyError(error)
             else:
                 return data

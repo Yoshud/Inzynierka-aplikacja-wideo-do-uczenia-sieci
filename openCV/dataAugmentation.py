@@ -10,7 +10,7 @@ url = "http://localhost:8000/dataAugmentationOrder"
 urlResponse = "http://localhost:8000/imageAfterDataAugmentation"
 
 
-def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode):
+def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode, orderId):
     payload = {
         "pointPosition": list(pointPosition.astype(str)),
         "cropPosition": list(cropPosition.astype(str)),
@@ -18,6 +18,7 @@ def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, toImagePat
         "frameId": frameId,
         "toImagePath": toImagePath,
         "methodCode": methodCode,
+        "orderId": orderId,
     }
     r = requests.post(urlResponse, data=json.dumps(payload))
     if r.json()["ok"]:
@@ -56,12 +57,13 @@ def processOrders(data):
         pathToCreate.mkdir(parents=True, exist_ok=True)
         path = order["framePath"]
         frameId = order["frameId"]
+        orderId = order["orderId"]
         fileName, fileSufix = fileNameAndSufixFromPath(path)
 
         imgs = process(path, order["pointPosition"], order["augmentationCode"], order["expectedSize"])
         for imgDict in imgs:
             fullPathToSave = os.path.join(pathToSave,
-                                          "{}_{}.{}".format(fileName, imgDict["methodCode"], fileSufix))
+                                          "{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), fileSufix))
             fullPathToSave = fullPathToSave.replace('\\', '/')
             if cv2.imwrite(fullPathToSave, imgDict["img"], [cv2.IMWRITE_PNG_COMPRESSION, 0]):
                 sendingRequest(
@@ -71,6 +73,7 @@ def processOrders(data):
                     cropPosition=imgDict["cropPosition"],
                     resizeScale=imgDict["resizeScale"],
                     methodCode=imgDict["orginalMethodCode"],
+                    orderId=orderId,
                 )
     return waitForOrders, None
 

@@ -1,0 +1,15 @@
+{
+  "optimizer": {
+    "type": "momentum",
+    "parameters": {
+      "momentum": 0.9
+    }
+  },
+  "loss": {
+    "type": "combined",
+    "parameters": {
+      "norm_2_ratio": 0.2,
+      "subtract_ratio": 1.1
+    }
+  }
+}
