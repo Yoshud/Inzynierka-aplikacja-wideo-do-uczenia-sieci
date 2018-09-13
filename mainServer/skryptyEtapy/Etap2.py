@@ -207,7 +207,7 @@ class FramePosition(View):
         if dictions is None:
             return None
         return zip(*[(dictElement["x"], dictElement["y"]) if dictElement else (None, None)
-                     for dictElement in dictions['positions']])
+                     for dictElement in dictions])
 
     def positionsXYInfo(self, positionObjects):
         positionDicts = self.positionsAsDict(positionObjects)
