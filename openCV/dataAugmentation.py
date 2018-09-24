@@ -38,7 +38,7 @@ def waitForOrders(data):
             return processOrders, orders
         else:
             print("wait")
-            time.sleep(2)
+            time.sleep(5)
             return waitForOrders, None
 
 def fileNameAndSufixFromPath(path):

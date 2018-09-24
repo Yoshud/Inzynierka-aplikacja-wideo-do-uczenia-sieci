@@ -11,7 +11,7 @@ class InternalConnection:
     def sendResponse(self, payload):
         try:
             r = requests.post(self._urlResponse, data=json.dumps(payload))
-            if r.json()["ok"]:
+            if r.status_code==200 and r.json()["ok"]:
                 return True
             else:
                 time.sleep(5)
@@ -25,8 +25,11 @@ class InternalConnection:
     def getData(self):
         try:
             r = requests.get(self._url)
-            json = r.json()
-            return json
+            if r.status_code == 200:
+                json = r.json()
+                return json
+            else:
+                return None
         except ConnectionError:
             print("no connection")
             return None

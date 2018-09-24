@@ -30,7 +30,7 @@ def waitForMovies(data):
             return processMovies, movies
         else:
             print("wait")
-            time.sleep(5)
+            time.sleep(10)
             return waitForMovies, None
 
 

@@ -231,7 +231,7 @@ class FramePosition(View):
             .filter(film__pk=movieId, nr__lt=frame.nr, pozycja__status__status__in=[endPositionStatus, ]) \
             .order_by("nr")
         try:
-            return ordererFramesWithEndStatus[-1]
+            return ordererFramesWithEndStatus.last()
         except:
             try:
                 return ordererFramesWithEndStatus[0]
@@ -240,10 +240,16 @@ class FramePosition(View):
 
     def findStartFrame(self, frame):
         firstEndFrame = self.findLastFrameWithEndStatusOrNone(frame)
-        if firstEndFrame:
-            startFrame = Klatka.objects.get(film=firstEndFrame.film, nr=(firstEndFrame.nr + 1))
-        else:
-            startFrame = Klatka.objects.get(film=frame.film, nr=0)
+        firstEndFrameNr = firstEndFrame.nr if firstEndFrame else 0
+        userFramesAfterLastEndFrame = Klatka.objects\
+            .filter(film=frame.film, nr__gt=firstEndFrameNr, pozycja__status__status=userPositionStatus)\
+            .order_by("nr")
+        startFrame = userFramesAfterLastEndFrame[0]
+        #
+        # if firstEndFrame:
+        #     startFrame = Klatka.objects.get(film=firstEndFrame.film, nr=(firstEndFrame.nr + 1))
+        # else:
+        #     startFrame = Klatka.objects.get(film=frame.film, nr=0)
         return startFrame
 
     def findAllFramesFromStartToEnd(self, frame):
