@@ -89,7 +89,7 @@ class Learn(View):
 
     def parametersToDict(self, learnObject):
         parameters = learnObject.parametry
-        pathToCreate = Path(os.path.join(parameters.zbiory.sesja.folderModele.sciezka, "model_{}".format(learnObject.pk)))
+        pathToCreate = Path(os.path.join(parameters.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)))
         pathToCreate.mkdir(parents=True, exist_ok=True)
 
         return { # nie zmieniac kluczy gdyz uzywane później(learnResponse) jako **kwargs dla funkcji

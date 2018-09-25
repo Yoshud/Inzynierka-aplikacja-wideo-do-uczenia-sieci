@@ -10,13 +10,14 @@ urlResponse = "http://localhost:8000/imageAfterDataAugmentation"
 connection = InternalConnection(url, urlResponse)
 
 
-def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode, orderId):
+def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId):
     payload = {
         "pointPosition": list(pointPosition.astype(str)),
         "cropPosition": list(cropPosition.astype(str)),
         "resizeScale": resizeScale,
         "frameId": frameId,
-        "toImagePath": toImagePath,
+        # "toImagePath": toImagePath,
+        "imageName": imageName,
         "methodCode": methodCode,
         "orderId": orderId,
     }
@@ -61,12 +62,12 @@ def processOrders(data):
 
         imgs = process(path, order["pointPosition"], order["augmentationCode"], order["expectedSize"])
         for imgDict in imgs:
-            fullPathToSave = os.path.join(pathToSave,
-                                          "{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), fileSufix))
-            fullPathToSave = fullPathToSave.replace('\\', '/')
+            imgName = "{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), fileSufix)
+            fullPathToSave = os.path.join(pathToSave, imgName).replace('\\', '/')
+
             if cv2.imwrite(fullPathToSave, imgDict["img"], [cv2.IMWRITE_PNG_COMPRESSION, 0]):
                 sendingRequest(
-                    toImagePath=fullPathToSave,
+                    imageName=imgName,
                     frameId=frameId,
                     pointPosition=imgDict["position"],
                     cropPosition=imgDict["cropPosition"],

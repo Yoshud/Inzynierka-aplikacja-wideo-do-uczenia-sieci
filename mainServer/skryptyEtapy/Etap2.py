@@ -30,21 +30,23 @@ class ReturnMoviesToProcess(View):
             "path": movie.sciezka,
             "movieName": movie.nazwa,
             "id": movie.pk,
-            "pathToSave": movie.sesja.folderZObrazami.sciezka,
+            "pathToSave": movie.sesja.folderZObrazami.getPath(),
         }
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class MovieProcessed(View):
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        movieId = data.get("movieId", False)
-        frames = data["frames"]
+class MovieProcessed(JsonView):
+    def post_method(self):
+        movieId = self._get_data("movieId", False)
+        frames = self._get_data("frames")
         try:
             self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
         except:
             raise HttpResponseServerError
         return JsonResponse({"ok": True})
+
+    def get_method(self):
+        pass
 
     def addToProcessedMovies(self, movie, frames,
                              statusToRemove=StatusFilmu.objects.get_or_create(status="W trakcie przetwarzania")[0],
@@ -52,48 +54,40 @@ class MovieProcessed(View):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         for frameInfo in frames:
-            frame = Klatka(sciezka=frameInfo["path"], nr=frameInfo["nr"], film=movie)
+            frame = Klatka(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie)
             frame.save()
 
         print(movie.nazwa)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GetNextMovie(View):
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8'))
-        try:
-            sessionId = data["sessionId"]
-        except:
-            raise Http404
-        try:
-            previousMovieId = data["previousMovieId"]
+class GetNextMovie(JsonView):
+    def post_method(self):
+        sessionId = self._get_data_or_error("sessionId")
 
+        previousMovieId = self._get_data("previousMovieId", None)
+        if previousMovieId:
             previousMovie = Film.objects.get(pk=previousMovieId)
             statusToAdd = StatusFilmu.objects.get_or_create(status="Przypisano punkty")[0]
             removeMultipleStatuses(previousMovie, ["W trakcie obslugi", "Przetworzono"])
             previousMovie.status.add(statusToAdd)
             previousMovie.save()
-        except KeyError:
-            pass
-        except:
-            raise HttpResponseServerError
-        finally:
-            try:
-                nextMovie = Film.objects \
-                    .filter(sesja__pk=sessionId, status__status__in=["Przetworzono"]) \
-                    .order_by("data")[0]
-                statusToAdd = StatusFilmu.objects.get_or_create(status="W trakcie obslugi")[0]
-                nextMovie.status.add(statusToAdd)
-            except IndexError:
-                movieCount = Film.objects \
-                    .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania", "Do przetworzenia"]) \
-                    .count()
 
-                if movieCount:
-                    return JsonResponse({"count": movieCount}, status=400)
-                else:
-                    raise Http404
+        try:
+            nextMovie = Film.objects \
+                .filter(sesja__pk=sessionId, status__status__in=["Przetworzono"]) \
+                .order_by("data")[0]
+            statusToAdd = StatusFilmu.objects.get_or_create(status="W trakcie obslugi")[0]
+            nextMovie.status.add(statusToAdd)
+        except IndexError:
+            movieCount = Film.objects \
+                .filter(sesja__pk=sessionId, status__status__in=["W trakcie przetwarzania", "Do przetworzenia"]) \
+                .count()
+
+            if movieCount:
+                return JsonResponse({"count": movieCount}, status=400)
+            else:
+                return HttpResponse(status=404)
 
         return JsonResponse({
             "movieId": nextMovie.pk,
@@ -104,17 +98,22 @@ class GetNextMovie(View):
             "y": nextMovie.rozmiarY,
         })
 
+    def get_method(self):
+        pass
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GetFrame(View):
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8'))
-        movieId = data.get("movieId")
-        frameNr = data.get("frameNr")
-        imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).sciezka
+class GetFrame(JsonView):
+    def post_method(self):
+        # data = json.loads(request.read().decode('utf-8'))
+        movieId = self._get_data_or_error("movieId")
+        frameNr = self._get_data_or_error("frameNr")
+        imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).getPath()
         wrapper = base64.b64encode(open(imagePath, 'rb').read()).decode('utf-8')
         response = HttpResponse(wrapper, content_type='image/png')
         return response
+
+    def get_method(self):
+        pass
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -133,7 +132,7 @@ class FramePosition(View):
             if frameId:
                 positionObjects = PozycjaPunktu.objects.filter(klatka__pk=frameId)
             else:
-                raise HttpResponseBadRequest
+                return HttpResponseBadRequest()
 
         positions = self.positionsAsDict(positionObjects)
         if positions:
@@ -245,11 +244,7 @@ class FramePosition(View):
             .filter(film=frame.film, nr__gt=firstEndFrameNr, pozycja__status__status=userPositionStatus)\
             .order_by("nr")
         startFrame = userFramesAfterLastEndFrame[0]
-        #
-        # if firstEndFrame:
-        #     startFrame = Klatka.objects.get(film=firstEndFrame.film, nr=(firstEndFrame.nr + 1))
-        # else:
-        #     startFrame = Klatka.objects.get(film=frame.film, nr=0)
+
         return startFrame
 
     def findAllFramesFromStartToEnd(self, frame):

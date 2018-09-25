@@ -23,37 +23,34 @@ class DataAugmentationOrder(View):
 
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        try:
-            sessionId = data["sessionId"]
-            session = Sesja.objects.get(pk=sessionId)
-            moviesId = data["moviesId"]
-            isFlipVertical = 1 if data["isFlipVertical"] else 0
-            isFlipHorizontal = 1 if data["isFlipHorizontal"] else 0
-            numberOfRandomCrops = int(data["numberOfRandomCrops"])
-            expectedSize = data["expectedSize"]
-            if numberOfRandomCrops > 10:
-                numberOfRandomCrops = 9
-            if numberOfRandomCrops < 1:
-                numberOfRandomCrops = 1
-            dataAugmentationCode = 1000 + 100 * isFlipVertical + 10 * isFlipHorizontal + numberOfRandomCrops
+        sessionId = data["sessionId"]
+        session = Sesja.objects.get(pk=sessionId)
+        moviesId = data["moviesId"]
+        isFlipVertical = 1 if data["isFlipVertical"] else 0
+        isFlipHorizontal = 1 if data["isFlipHorizontal"] else 0
+        numberOfRandomCrops = int(data["numberOfRandomCrops"])
+        expectedSize = data["expectedSize"]
+        if numberOfRandomCrops > 10:
+            numberOfRandomCrops = 9
+        if numberOfRandomCrops < 1:
+            numberOfRandomCrops = 1
+        dataAugmentationCode = 1000 + 100 * isFlipVertical + 10 * isFlipHorizontal + numberOfRandomCrops
 
-            if "toSaveFolderPath" in data:
-                dataAugmentationFolderPath = data["toSaveFolderPath"]
-            else:
-                processedPath = session.folderPrzetworzone.sciezka
-                now = timezone.now()
-                folderName = "dataAugmentation_{}_{}" \
-                    .format(now.date(), now.time()) \
-                    .replace(":", "_").replace(".", "_")
-                dataAugmentationFolderPath = os.path.join(processedPath, folderName)
-            frames = flatten([self.getMovieFrames(movieId) for movieId in moviesId])
+        if "toSaveFolderPath" in data:
+            dataAugmentationFolder = FolderZPrzygotowanymiObrazami(sciezka=data["toSaveFolderPath"])
+        else:
+            now = timezone.now()
+            folderName = "dataAugmentation_{}_{}" \
+                .format(now.date(), now.time()) \
+                .replace(":", "_").replace(".", "_")
+            dataAugmentationFolder = FolderZPrzygotowanymiObrazami.objects.create(sesja=session, nazwa=folderName)
 
-            for frame in frames:
-                self.addOrder(frame, dataAugmentationCode, dataAugmentationFolderPath, expectedSize)
+        frames = flatten([self.getMovieFrames(movieId) for movieId in moviesId])
 
-            return JsonResponse({"folderPath": dataAugmentationFolderPath})
-        except:
-            raise Http404
+        for frame in frames:
+            self.addOrder(frame, dataAugmentationCode, dataAugmentationFolder, expectedSize)
+
+        return JsonResponse({"folderPath": dataAugmentationFolder.getPath()})
 
     def orderToDict(self, dataAugmenationOrder):
         positionObject = self.getInterpolatedPositionOr404(dataAugmenationOrder.klatka)
@@ -62,8 +59,8 @@ class DataAugmentationOrder(View):
         orderDict = {
             "frameId": dataAugmenationOrder.klatka.pk,
             "augmentationCode": dataAugmenationOrder.kodAugmentacji,
-            "framePath": dataAugmenationOrder.klatka.sciezka,
-            "pathToSave": dataAugmenationOrder.folder.sciezka,
+            "framePath": dataAugmenationOrder.klatka.getPath(),
+            "pathToSave": dataAugmenationOrder.folder.getPath(),
             "pointPosition": position,
             "expectedSize": expectedSize,
             "orderId": dataAugmenationOrder.pk,
@@ -75,22 +72,22 @@ class DataAugmentationOrder(View):
     def getMovieFrames(self, movieId):
         frames = Klatka.objects.filter(
             film__pk=movieId,
-            pozycja__status__status__in=[endPositionStatus, userPositionStatus, interpolatedPositonStatus]
+            pozycja__status__status__in=[interpolatedPositonStatus]
         ).distinct()
         return frames
 
-    def addOrder(self, frame, dataAugmentationCode, dataAugmentationFolderPath, expectedSize):
+    def addOrder(self, frame, dataAugmentationCode, dataAugmentationFolder, expectedSize):
         augmentationOrderCountForFrame = ZlecenieAugmentacji.objects \
             .filter(klatka=frame, oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]) \
             .count()
         noAugmentationOrderForFrame = augmentationOrderCountForFrame == 0
 
         if noAugmentationOrderForFrame:
-            folder = FolderZPrzygotowanymiObrazami.objects.get_or_create(sciezka=dataAugmentationFolderPath)[0]
+            # folder = FolderZPrzygotowanymiObrazami.objects.get_or_create(sciezka=dataAugmentationFolderPath)[0]
             ZlecenieAugmentacji.objects.create(
                 klatka=frame,
                 kodAugmentacji=dataAugmentationCode,
-                folder=folder,
+                folder=dataAugmentationFolder,
                 oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]
             )
 
@@ -107,33 +104,31 @@ class DataAugmentationOrder(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class ImageAfterDataAugmentation(View):
-    def post(self, request, **kwargs):
-        try:
-            data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-            pointPosition = data["pointPosition"]
-            cropPosition = data["cropPosition"]
-            resizeScale = data["resizeScale"]
-            frameId = data["frameId"]
-            toImagePath = data["toImagePath"]
-            methodCode = data["methodCode"]
-            orderId = data["orderId"]
-        except:
-            raise Http404
-        try:
-            self.addImage(pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode, orderId)
-        except:
-            raise HttpResponseServerError
+class ImageAfterDataAugmentation(JsonView):
+    def post_method(self):
+
+        pointPosition = self._get_data_or_error("pointPosition")
+        cropPosition = self._get_data_or_error("cropPosition")
+        resizeScale = self._get_data_or_error("resizeScale")
+        frameId = self._get_data_or_error("frameId")
+        imageName = self._get_data_or_error("imageName")
+        methodCode = self._get_data_or_error("methodCode")
+        orderId = self._get_data_or_error("orderId")
+
+        self.addImage(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId)
         return JsonResponse({"ok": True})
 
-    def addImage(self, pointPosition, cropPosition, resizeScale, frameId, toImagePath, methodCode, orderId):
+    def get_method(self):
+        pass
+
+    def addImage(self, pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId):
         status = StatusPozycjiCrop.objects.get_or_create(status="punktOrginalny")[0]
         cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
         image = ObrazPoDostosowaniu.objects.create(
             pozycjaCropa=cropPositionObject,
             wspResize=resizeScale,
             klatkaMacierzysta_id=frameId,
-            sciezka=toImagePath,
+            nazwa=imageName,
             metoda=methodCode,
             zlecenie_id=orderId
         )

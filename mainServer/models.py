@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-
+import os
 
 class Status(models.Model):
     status = models.CharField("status", max_length=100)
@@ -47,8 +47,17 @@ class PozycjaCropa(Punkt):
 class Klatka(models.Model):
     film = models.ForeignKey("Film", related_name="film", on_delete=models.CASCADE)
     nr = models.IntegerField(default=0)
-    sciezka = models.TextField(default="")
+    sciezka = models.TextField(default="", blank=True, null=True)
     data = models.DateTimeField(default=timezone.now)
+    nazwa = models.TextField(default="", blank=True, null=True)
+
+    def getPath(self):
+        if self.sciezka:
+            return self.sciezka
+        elif self.nazwa:
+            return os.path.join(self.film.sesja.folderZObrazami.getPath(), self.nazwa)
+        else:
+            raise AttributeError("Not defined sciezka and nazwa")
 
 
 class Film(models.Model):
@@ -65,17 +74,55 @@ class Film(models.Model):
 
 
 class FolderZObrazami(models.Model):
-    sciezka = models.TextField(default="")
+    sciezka = models.TextField(default="", blank=True, null=True)
+    nazwa = models.TextField(default="", blank=True, null=True)
+
+    def getPath(self):
+        if self.sciezka:
+            return self.sciezka
+        elif self.nazwa:
+            return os.path.join(self.sesja.sciezka, self.nazwa)
+        else:
+            raise AttributeError("Not defined sciezka and sesja or nazwa")
 
 
 class FolderZPrzygotowanymiObrazami(models.Model):
-    sciezka = models.TextField(default="")
+    sciezka = models.TextField(default="", blank=True, null=True)
+    nazwa = models.TextField(default="", blank=True, null=True)
+    sesja = models.ForeignKey("Sesja", on_delete=models.CASCADE, blank=True, null=True)
+
+    def getPath(self):
+        if self.sciezka:
+            return self.sciezka
+        elif self.sesja and self.nazwa:
+            return os.path.join(self.sesja.sciezka, self.nazwa)
+        else:
+            raise AttributeError("Not defined sciezka and sesja or nazwa")
+
 
 class FoldeZPrzetworzonymiObrazami(models.Model):
-    sciezka = models.TextField(default="")
+    sciezka = models.TextField(default="", blank=True, null=True)
+    nazwa = models.TextField(default="", blank=True, null=True)
+
+    def getPath(self):
+        if self.sciezka:
+            return self.sciezka
+        elif self.nazwa:
+            return os.path.join(self.sesja.sciezka, self.nazwa)
+        else:
+            raise AttributeError("Not defined sciezka and nazwa")
 
 class FolderModele(models.Model):
-    sciezka = models.TextField(default="")
+    sciezka = models.TextField(default="", blank=True, null=True)
+    nazwa = models.TextField(default="", blank=True, null=True)
+
+    def getPath(self):
+        if self.sciezka:
+            return self.sciezka
+        elif self.nazwa:
+            return os.path.join(self.sesja.sciezka, self.nazwa)
+        else:
+            raise AttributeError("Not defined sciezka and nazwa")
 
 
 class ObrazPoDostosowaniu(models.Model):
@@ -92,10 +139,19 @@ class ObrazPoDostosowaniu(models.Model):
 
     wspResize = models.FloatField(default=1.0)
     klatkaMacierzysta = models.ForeignKey("Klatka", on_delete=models.CASCADE)
-    sciezka = models.TextField(default="")
+    sciezka = models.TextField(default="", blank=True, null=True)
+    nazwa = models.TextField(default="", blank=True, null=True)
     metoda = models.CharField(max_length=1, choices=METHODS)
     zlecenie = models.ForeignKey("ZlecenieAugmentacji", on_delete=models.CASCADE, null=True)
     # PozycjaPunktuPoCrop w polu oddzielnym
+
+    def getPath(self):
+        if self.sciezka:
+            return self.sciezka
+        elif self.nazwa:
+            return os.path.join(self.zlecenie.folder.getPath(), self.nazwa)
+        else:
+            raise AttributeError("Not defined sciezka and nazwa")
 
 
 class ZlecenieAugmentacji(models.Model):
@@ -189,3 +245,4 @@ class Sesja(models.Model):
     data = models.DateTimeField(default=timezone.now)
     nazwa = models.TextField(default="Nienazwana_{}".format(timezone.now()))
     ostatniaAktualizacja = models.DateTimeField(default=timezone.now)
+    sciezka = models.FilePathField(default="", blank=True, null=True)

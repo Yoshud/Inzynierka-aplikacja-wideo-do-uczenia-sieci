@@ -16,7 +16,7 @@ class GetObjectsFromPath(View):
         parent = request.GET.get('parent', None)
         child = request.GET.get('child', '')
         if path == None:
-            raise Http404
+            raise HttpResponseBadRequest
         if parent != None:
             path = pathUp(path)
         else:
@@ -31,12 +31,13 @@ class GetObjectsFromPath(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class AddMovie(View):
-    def get(self, request, **kwargs):
-        path = request.GET.get('path', '')
+class AddMovie(JsonView):
+    def get_method(self):
+        path = self._get_data('path')
         cap = cv2.VideoCapture(path)
         if cap is None or not cap.isOpened():
-            raise Http404
+            return HttpResponseBadRequest()
+
         fps = cap.get(cv2.CAP_PROP_FPS)
         iloscKlatek = cap.get(cv2.CAP_PROP_FRAME_COUNT)
         dlugosc = iloscKlatek / fps
@@ -51,36 +52,29 @@ class AddMovie(View):
             "y": int(y),
         })
 
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8'))
-        path = data.get('path', '')
-        if path == '':
-            raise Http404
-        files = data.get('files')
-        folders = data.get('folders')
-        sessionName = data.get('sessionName', 'autoName')
+    def post_method(self):
+        path = self._get_data_or_error("path")
+        files = self._get_data("files")
+        folders = self._get_data('folders')
+        sessionName = self._get_data('sessionName', 'autoName')
         now = timezone.now()
-        sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
-        sessionPath = data.get('toFolderPath', '')
-        sessionPath = os.path.join(os.path.join(pathUp(currentPath()), 'Sesje'), sessionName) \
-            if sessionPath == '' else sessionPath
-        imagesPath = os.path.join(sessionPath, 'Obrazy')
-        modelsPath = os.path.join(sessionPath, 'Modele')
-        processedPath = os.path.join(sessionPath, 'Przygotowane')
 
-        imageFolder = FolderZObrazami(sciezka=imagesPath)
-        imageFolder.save()
-        modelsFolder = FolderModele.objects.create(sciezka=modelsPath)
-        processedFolder = FoldeZPrzetworzonymiObrazami.objects.create(sciezka=processedPath)
+        sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
+        sessionPath = \
+            self._get_data('toFolderPath', os.path.join(os.path.join(pathUp(currentPath()), 'Sesje'), sessionName))
+
+        imageFolder = FolderZObrazami.objects.create(nazwa=imagesFolderName)
+        modelsFolder = FolderModele.objects.create(nazwa=modelsFolderName)
+        processedFolder = FoldeZPrzetworzonymiObrazami.objects.create(nazwa=processedFolderName)
 
         session = Sesja(
             nazwa=sessionName,
+            sciezka=sessionPath,
             folderZObrazami=imageFolder,
             folderModele=modelsFolder,
             folderPrzetworzone=processedFolder
         )
         session.save()
-        request.session["sessionPk"] = session.pk
         if files:
             for file in files:
                 self.addMovie(session.pk, os.path.join(path, file))

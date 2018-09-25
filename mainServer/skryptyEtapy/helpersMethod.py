@@ -8,6 +8,10 @@ from django.http import Http404
 from django.views.generic import View
 from abc import ABC, abstractmethod
 
+imagesFolderName = "Obrazy"
+modelsFolderName = "Modele"
+processedFolderName = "Przygotowane"
+
 endPositionStatus = "Koniec"
 userPositionStatus = "Dodane uzytkownik"
 interpolatedPositonStatus = "Interpolacja"
@@ -114,10 +118,10 @@ class JsonView(View, ABC):
 
     def _get_data_or_error(self, key, error=HttpResponseBadRequest()):
         if self._data:
-            try:
+            if key in self._data:
                 return self._data[key]
-            except KeyError:
-                raise error
+            else:
+                raise MyError(error)
         else:
             data = self._request.GET.get(key, None)
             if not data:
