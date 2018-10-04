@@ -1,6 +1,7 @@
 from tensorflow import train as tf
 from tensorflow.python.training.optimizer import Optimizer
 import numpy as np
+from ModelML.parameter import Parameter
 
 
 class OptimizeMethod:
@@ -22,25 +23,43 @@ class OptimizeMethod:
 optimizeMethodDict = {
     "momentum": OptimizeMethod(
         method=tf.MomentumOptimizer,
-        requirements=["momentum", ],
-        optional=["use_nesterov", "use_locking"]
+        requirements=[Parameter("momentum", "float", 0.0, 1.0, 0.9).dict(), ],
+        optional=[
+            Parameter("use_nesterov", "bool").dict(),
+            Parameter("use_locking", "bool").dict()
+        ]
     ),
     "adam": OptimizeMethod(
         method=tf.AdamOptimizer,
         requirements=[],
-        optional=["beta1", "beta2", "epsilon", "use_locking"]
+        optional=[
+            Parameter("beta1", "float", 0.0, default=0.9).dict(),
+            Parameter("epsilon", "float", 0.0, default=1e-8).dict(),
+            Parameter("beta2", "float", 0.0, default=0.999).dict(),
+            Parameter("use_locking", "bool").dict()
+        ]
     ),
     "ftrl": OptimizeMethod(
         method=tf.FtrlOptimizer,
         requirements=[],
         optional=[
-            "learning_rate_power", "initial_accumulator_value", "l1""_regularization_strength",
-            "l2""_regularization_strength", "use_locking", "name", "l2""_shrinkage_regularization_strength"
+            Parameter("learning_rate_power", "float", -999, 0.0, 0.5).dict(),
+            Parameter("initial_accumulator_value", "float", 0.0, 1.0, 0.1).dict(),
+            Parameter("l1_regularization_strength", "float", 0.0, default=0.0).dict(),
+            Parameter("l2_regularization_strength", "float", 0.0, default=0.0).dict(),
+            Parameter("use_locking", "bool").dict(),
+            Parameter("l2_shrinkage_regularization_strength", "float", 0.0, default=0.0).dict(),
         ]
     ),
     "RMSProp": OptimizeMethod(
         method=tf.RMSPropOptimizer,
         requirements=[],
-        optional=["decay", "momentum", "epsilon", "use_locking", "centered"]
+        optional=[
+            Parameter("decay", "float", 0.0, 1.0, 0.9).dict(),
+            Parameter("momentum", "float", 0.0, 1.0, 0.0).dict(),
+            Parameter("epsilon", "float", 0.0, 1.0, 1e-10).dict(),
+            Parameter("use_locking", "bool").dict(),
+            Parameter("centered", "bool").dict()
+        ]
     )
 }

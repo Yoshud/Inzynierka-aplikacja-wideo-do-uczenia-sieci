@@ -1,10 +1,11 @@
 import tensorflow as tf
 from abc import ABC, abstractmethod
 import numpy as np
+from ModelML.parameter import Parameter
 
 
 class LossMethod(ABC):
-    parameters = []
+    parameters: list = []
 
     @staticmethod
     def check_params(self, **params):
@@ -21,7 +22,10 @@ class LossMethod(ABC):
 class CombinedLoss(LossMethod):
     norm_2_ratio = 0.2
     subtract_ratio = 1.1
-    parameters = ["norm_2_ratio", "subtract_ratio"]
+    parameters = [
+        Parameter("norm_2_ratio", "float", 0.0, 5.0, 0.2).dict(),
+        Parameter("subtract_ratio", "float", 0.0, 10.0, 1.1).dict(),
+    ]
 
     def get(self, pred, y):
         return self.norm_2_ratio * tf.reduce_mean(
