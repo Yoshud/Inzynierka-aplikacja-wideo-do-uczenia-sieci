@@ -65,7 +65,7 @@ class Data_picker:
         self._img_size = img_size
 
         self._number_of_draw = int(training_iters / epoch_size) + 1
-        self._size_of_draw = int(batch_size * epoch_size * 2)  # poprawic
+        self._size_of_draw = int(batch_size * epoch_size / 4)  # poprawic
         self._size_of_draw = min(max_size_of_draw, self._size_of_draw, len(train_patches_with_positions))
 
         if randomize:
@@ -111,10 +111,13 @@ class Data_picker:
         X = np.zeros([len(patches_with_positions), imgN])
         Y = np.zeros([len(patches_with_positions), 2])
 
-        for i, (patch, position) in enumerate(patches_with_positions):
-            img = imread(patch)
-            X[i, :] = img.flatten()
-            Y[i, :] = position
+        for i, (path, position) in enumerate(patches_with_positions):
+            try:
+                img = imread(path)
+                X[i, :] = img.flatten()
+                Y[i, :] = position
+            except:
+                print(path)
 
         return X, Y
 

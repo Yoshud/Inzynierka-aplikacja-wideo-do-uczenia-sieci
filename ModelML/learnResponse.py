@@ -68,13 +68,20 @@ def getDataParameters(data):
     return parameters
 
 def processLearnOrder(data):
-    data_picker = Data_picker(4, 2, 10, (320, 320), *data["sets"])
-    optimizer = getOptimizer(data)
-    lossMethod = getLoss(data)
     parameters = getDataParameters(data)
     learn_id = data["learn_id"]
+
+    data_picker = Data_picker(
+        parameters["batch_size"], parameters["epoch_size"], parameters["training_iters"],
+        (parameters["img_size_x"], parameters["img_size_y"]), *data["sets"]
+    )
+
+    optimizer = getOptimizer(data)
+    lossMethod = getLoss(data)
+
     results = train(optimizer_type=optimizer, loss_fun=lossMethod, data_picker=data_picker, **parameters)
     sendingRequest({"result": results, "learn_id": learn_id})
+
     return waitForLearnOrders, None
 
 

@@ -17,12 +17,24 @@ class DivideIntoSets(View):
         try:
             dataSetsRatios = data["dataSetRatios"]
             sessionId = data["sessionId"]
-            if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
-                raise HttpResponseBadRequest
+
+            networkId = data["networkId"]
         except:
             raise HttpResponseBadRequest
+
+        network = Sieci.objects.get(pk=networkId)
+        imgSizeX = network.inputSizeX
+        imgSizeY = network.inputSizeY
+
+        if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
+            raise HttpResponseBadRequest
+
         try:
-            allImagesObjects = ObrazPoDostosowaniu.objects.filter(klatkaMacierzysta__film__sesja_id=sessionId)
+            allImagesObjects = ObrazPoDostosowaniu.objects.filter(
+                klatkaMacierzysta__film__sesja_id=sessionId,
+                zlecenie__oczekiwanyRozmiarY=imgSizeY,
+                zlecenie__oczekiwanyRozmiarX=imgSizeX
+            )
             allImagesObjects = np.random.permutation(allImagesObjects)
 
             def tmpFun(imagesAndRatioBefore, ratioAct):
@@ -81,7 +93,7 @@ class Learn(View):
 
     def setData(self, set):
         setPathsWithPositions = [
-            [imgObject.sciezka, imgObject.pozycja.filter(status__status="punktOrginalny")[0]]
+            [imgObject.getPath(), imgObject.pozycja.filter(status__status="punktOrginalny")[0]]
             for imgObject in set.iterator()
         ]
         setPathsWithPositions = [[patch, [position.x, position.y]] for patch, position in setPathsWithPositions]
@@ -102,7 +114,7 @@ class Learn(View):
             "network": json.loads(parameters.modelSieci.opisXML),
             "img_size_x": parameters.modelSieci.inputSizeX,
             "img_size_y": parameters.modelSieci.inputSizeY,
-            "model_file": os.path.join(parameters.zbiory.sesja.folderModele.sciezka, "model_{}".format(learnObject.pk)),
+            "model_file": os.path.join(parameters.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)),
             "others": json.loads(parameters.opisUczeniaXML),
         }
 

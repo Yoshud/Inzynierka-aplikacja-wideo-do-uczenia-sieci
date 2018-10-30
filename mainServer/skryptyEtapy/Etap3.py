@@ -29,7 +29,11 @@ class DataAugmentationOrder(View):
         isFlipVertical = 1 if data["isFlipVertical"] else 0
         isFlipHorizontal = 1 if data["isFlipHorizontal"] else 0
         numberOfRandomCrops = int(data["numberOfRandomCrops"])
-        expectedSize = data["expectedSize"]
+
+        networkId = data["networkId"]
+        network = Sieci.objects.get(pk=networkId)
+        expectedSize = {"x": network.inputSizeX, "y": network.inputSizeY}
+
         if numberOfRandomCrops > 10:
             numberOfRandomCrops = 9
         if numberOfRandomCrops < 1:

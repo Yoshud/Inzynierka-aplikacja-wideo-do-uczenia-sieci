@@ -4,6 +4,15 @@ from functools import reduce
 import tensorflow as tf
 import datetime as dt
 import json
+import sys
+
+log = open("log.txt", "w")
+sys.stderr = log
+sys.stdout = log
+# def write_out(data, log=log):
+#     print(data)
+#     string = str(data)
+#     log.write(string)
 
 # standaryzation
 def standarize(data):
@@ -24,7 +33,7 @@ def max_pool(img, k):
 def conv_net(_X, _conv_network_variables_dicts, _fc_network_variables_dicts, _conv_out_size, _dropout, img_size_x,
              img_size_y, channels):
     _X = tf.reshape(_X, shape=[-1, img_size_x, img_size_y, channels])  # -1 -> dostosuj, 320x320 -> rozmiar obrazka, 1 -> głębokosć (RGB = 3)
-    print(_X.shape)
+    print(_X.shape, flush=True)
 
     def one_conv_layer(conv_before, conv_network_variables_dict):
         k = conv_network_variables_dict['max_pool']
@@ -51,7 +60,8 @@ def conv_net(_X, _conv_network_variables_dicts, _fc_network_variables_dicts, _co
     return out
 
 
-def init_conv_variables(conv_networks_dicts, n_input, channels):
+def init_conv_variables(conv_networks_dicts, img_size_x, img_size_y, channels):
+    n_input = img_size_x * img_size_y
     conv_network_variables_dicts = list()
 
     def append_weight_and_bias(filters_before, net_dict, conv_network_variables_dicts=conv_network_variables_dicts):
@@ -72,7 +82,7 @@ def init_conv_variables(conv_networks_dicts, n_input, channels):
     max_pool_dimension_reduce = np.prod([dict_el['max_pool'] for dict_el in conv_networks_dicts])
     max_pool_dimension_reduce = max_pool_dimension_reduce if max_pool_dimension_reduce > 0 else 1
     conv_out_size = \
-        int(320 / max_pool_dimension_reduce) * int(320 / max_pool_dimension_reduce) * conv_networks_dicts[-1]['filters']
+        int(img_size_x / max_pool_dimension_reduce) * int(img_size_y / max_pool_dimension_reduce) * conv_networks_dicts[-1]['filters']
 
     return conv_network_variables_dicts, conv_out_size
 
@@ -108,7 +118,7 @@ def test_model(sess: tf.Session, data_picker: Data_picker, batch_size, pred, x, 
             error = np.mean(np.sqrt(np.sum(np.square(model_out - y_exp))))
             errors.append(error)
             if it % 30 == 0:
-                print("model:\t{}  \texpected:\t{},  \terror: \t{}".format(model_out, y_exp, error))
+                print("model:\t{}  \texpected:\t{},  \terror: \t{}".format(model_out, y_exp, error), flush=True)
             it += 1
 
         test_batch_x, test_batch_y = data_picker.test_batch()
@@ -116,7 +126,7 @@ def test_model(sess: tf.Session, data_picker: Data_picker, batch_size, pred, x, 
     mean_error = np.mean(errors)
     std_error = np.std(errors)
     max_error = np.max(errors)
-    print("Mean error: {}, std: {}, max: {}".format(mean_error, std_error, max_error))
+    print("Mean error: {}, std: {}, max: {}".format(mean_error, std_error, max_error), flush=True)
     result = {
         "errors": json.dumps(errors),
         "mean": mean_error,
@@ -135,7 +145,7 @@ def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_siz
     y = tf.placeholder(tf.float32, [None, 2])
     keep_prob = tf.placeholder(tf.float32)  # dropout (keep probability)
 
-    conv_network_variables_dicts, conv_out_size = init_conv_variables(conv_networks_dicts, n_input, channels)
+    conv_network_variables_dicts, conv_out_size = init_conv_variables(conv_networks_dicts, img_size_x, img_size_y, channels)
     fc_network_variables_dicts = init_fc_variables(full_connected_network_dicts, conv_out_size)
     pred = \
         conv_net(x, conv_network_variables_dicts, fc_network_variables_dicts, conv_out_size, keep_prob, img_size_x,
@@ -162,11 +172,12 @@ def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_siz
             start_op = dt.datetime.now()
             sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys, keep_prob: dropout})
             end_op = dt.datetime.now()
-            print("#{} opt step {} {} takes {}".format(step, start_op, end_op, end_op - start_op))
+            print("#{} opt step {} {} takes {}".format(step, start_op, end_op, end_op - start_op), flush=True)
+
 
             if step % epoch_size == 0:
                 batch_loss = sess.run(loss, feed_dict={x: batch_xs, y: batch_ys, keep_prob: 1.})
-                print("Iter: {} ({} epoch), batch loss = {}".format(step, epoch, batch_loss))
+                print("Iter: {} ({} epoch), batch loss = {}".format(step, epoch, batch_loss), flush=True)
                 losses.append(batch_loss)
                 epoch += 1
 
@@ -175,6 +186,6 @@ def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_siz
                 saved = saver.save(sess, model_file)
 
         end_epoch = dt.datetime.now()
-        print("Optimization Finished, end={} duration={}".format(end_epoch, end_epoch - start_epoch))
+        print("Optimization Finished, end={} duration={}".format(end_epoch, end_epoch - start_epoch), flush=True)
 
         return {**test_model(sess, data_picker, batch_size, pred, x, keep_prob), **{"model_file": model_file}}
