@@ -3,7 +3,7 @@ from django.utils import timezone
 import os
 
 class Status(models.Model):
-    status = models.CharField("status", max_length=100)
+    status = models.CharField("status", max_length=100, unique=True)
 
     class Meta:
         abstract = True
@@ -21,9 +21,14 @@ class StatusPozycjiCrop(Status):
     pass
 
 
+class Kolor(models.Model): #TODO: podpiąć kolory pod sesje tak by dla danej sesji mogły być różne kolory
+    nazwa = models.CharField("nazwa", max_length=100, null=True, blank=True, unique=True)
+    kod = models.CharField("kod", max_length=100, null=True, blank=True)
+
+
 class Punkt(models.Model):
-    x = models.IntegerField("x", default=0)
-    y = models.IntegerField("y", default=0)
+    x = models.IntegerField("x", default=0, null=True, blank=True)
+    y = models.IntegerField("y", default=0, null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -32,12 +37,14 @@ class Punkt(models.Model):
 class PozycjaPunktu(Punkt):
     klatka = models.ForeignKey("Klatka", related_name="pozycja", on_delete=models.CASCADE)
     status = models.ForeignKey("StatusPozycji", related_name="pozycja", on_delete=models.CASCADE, blank=True, null=True)
+    kolor = models.ForeignKey("Kolor", related_name="pozycja", on_delete=models.CASCADE, blank=True, null=True)
 
 
 class PozycjaPunktuPoCrop(Punkt):
     obraz = models.ForeignKey("ObrazPoDostosowaniu", related_name="pozycja", on_delete=models.CASCADE)
     status = models.ForeignKey("StatusPozycjiCrop", related_name="pozycja", on_delete=models.CASCADE, blank=True,
                                null=True)
+    kolor = models.ForeignKey("Kolor", related_name="pozycjaCrop", on_delete=models.CASCADE, blank=True, null=True)
 
 
 class PozycjaCropa(Punkt):
@@ -161,15 +168,16 @@ class ZlecenieAugmentacji(models.Model):
     oczekiwanyRozmiarX = models.IntegerField("x")
     oczekiwanyRozmiarY = models.IntegerField("y")
     wTrakcie = models.BooleanField(default=False)
+    kolor = models.ForeignKey("Kolor", related_name="zlecenie", on_delete=models.CASCADE, blank=True, null=True)
 
 
 # Konieć CZ1:
-
 class ZbioryDanych(models.Model):
     sesja = models.ForeignKey("Sesja", on_delete=models.CASCADE)
     uczacy = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryUczacy")
     walidacyjny = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryWalidacyjny", blank=True)
     testowy = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryTestowy", blank=True)
+    kolor = models.ForeignKey("Kolor", related_name="zbioryDanych", on_delete=models.CASCADE, blank=True, null=True)
 
 
 class Sieci(models.Model):
@@ -186,7 +194,7 @@ class ParametryUczenia(models.Model):
     saveStep = models.IntegerField(default=500, blank=True, null=True)
     epochSize = models.IntegerField(default=50, blank=True, null=True)
     modelSieci = models.ForeignKey("Sieci", on_delete=models.CASCADE)
-    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE)
+    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True) #pozostalosc po starym
     opisUczeniaXML = models.TextField(default="")
 
 
@@ -208,6 +216,8 @@ class Uczenie(
     opis = models.TextField(blank=True, null=True)
     wynik = models.OneToOneField("WynikUczenia", related_name="learn", blank=True, null=True, on_delete=models.CASCADE)
     parametry = models.ForeignKey("ParametryUczenia", on_delete=models.CASCADE)
+    kolor = models.ForeignKey("Kolor", related_name="uczenie", on_delete=models.CASCADE, blank=True, null=True)
+    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True)
 
 
 class WynikUczenia(models.Model):
@@ -236,7 +246,7 @@ class WynikPrzetwarzania(models.Model):
 
 # koniecCZ2
 
-class Sesja(models.Model):
+class Sesja(models.Model): #TODO: nowa encja która ma kolory many-many i to ona decyduje kte kolory są dostępne dla sesji (lub niezdefiniowane)
     folderZObrazami = models.OneToOneField("FolderZObrazami", on_delete=models.CASCADE)
     filmyPrzetworzone = models.ManyToManyField("Film", related_name="sesjaPrzetworzone", blank=True)
     filmyUzytkownik = models.ManyToManyField("Film", related_name="sesjaUzytkownika", blank=True)

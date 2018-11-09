@@ -11,7 +11,7 @@ import numpy as np
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DivideIntoSets(View):
+class DivideIntoSets(View): #TODO: sprawdzic
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         try:
@@ -29,11 +29,20 @@ class DivideIntoSets(View):
         if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
             raise HttpResponseBadRequest
 
+        detaSetObjectsPks = {
+            colorObject.nazwa:  self.divideImagesIntoSets(sessionId, imgSizeY, imgSizeX, dataSetsRatios, colorObject)
+            for colorObject in Kolor.objects.all()
+        }
+
+        return JsonResponse({"dataSetIds": detaSetObjectsPks})
+
+    def divideImagesIntoSets(self, sessionId, imgSizeY, imgSizeX, dataSetsRatios, colorObject):
         try:
             allImagesObjects = ObrazPoDostosowaniu.objects.filter(
                 klatkaMacierzysta__film__sesja_id=sessionId,
                 zlecenie__oczekiwanyRozmiarY=imgSizeY,
-                zlecenie__oczekiwanyRozmiarX=imgSizeX
+                zlecenie__oczekiwanyRozmiarX=imgSizeX,
+                zlecenie__kolor=colorObject,
             )
             allImagesObjects = np.random.permutation(allImagesObjects)
 
@@ -57,25 +66,31 @@ class DivideIntoSets(View):
             dataSetObject.save()
         except:
             raise HttpResponseServerError
-        return JsonResponse({"dataSetId": dataSetObject.pk})
+
+        return dataSetObject.pk
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class Learn(View):
+class Learn(View): #TODO: sprawdzic
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        try:
-            description = data["description"]
-        except KeyError:
-            description = None
+
+        description = data["describtion"] if "describtion" in data else None
+
         try:
             parametersId = data["parametersId"]
+            dataSetIdsDict = data["dataSetIds"]
         except:
             raise HttpResponseBadRequest
-        learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId)
-        return JsonResponse({"learnId": learnObject.pk})
 
-    def get(self, request, **kwargs):
+        learnObjectPks = {
+            color: self.addLearnObject(description, parametersId, dataSetId)
+            for color, dataSetId in dataSetIdsDict.items()
+        }
+
+        return JsonResponse({"learnObjectPks": learnObjectPks})
+
+    def get(self, request, **kwargs): #TODO: dodać kolor tak by zapisywały do innych plików
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
             parameters = self.parametersToDict(learnObject)
@@ -90,6 +105,9 @@ class Learn(View):
         except:
             raise Http404
         return JsonResponse(responseData)
+
+    def addLearnObject(self, description, parametersId, dataSetId):
+        learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId, zbiory_id=dataSetId)
 
     def setData(self, set):
         setPathsWithPositions = [
@@ -120,7 +138,7 @@ class Learn(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class LearnResults(JsonView):
+class LearnResults(JsonView): #TODO: dodać kolor (pierwszo na bazie) + na nauce tak by zapisywał je do innych plików!!
     def post_method(self):
         data = self._data
         learn_result = WynikUczenia.objects.create(**data["result"])

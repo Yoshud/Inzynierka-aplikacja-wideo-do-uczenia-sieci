@@ -13,10 +13,10 @@ from ModelML.lossMethod import *
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DataAugmentationOrder(View):
+class DataAugmentationOrder(View): #TODO: sprawdzic
     def get(self, request, **kwargs):
         orders = ZlecenieAugmentacji.objects.filter(wTrakcie=False).order_by("pk")[0:20]
-        ordersDict = [self.orderToDict(order) for order in orders]
+        ordersDict = flatten([self.orderToDictsList(order) for order in orders])
         return JsonResponse({
             "orders": ordersDict,
         })
@@ -56,22 +56,27 @@ class DataAugmentationOrder(View):
 
         return JsonResponse({"folderPath": dataAugmentationFolder.getPath()})
 
-    def orderToDict(self, dataAugmenationOrder):
-        positionObject = self.getInterpolatedPositionOr404(dataAugmenationOrder.klatka)
-        position = (positionObject.x, positionObject.y)
-        expectedSize = (dataAugmenationOrder.oczekiwanyRozmiarX, dataAugmenationOrder.oczekiwanyRozmiarY)
-        orderDict = {
-            "frameId": dataAugmenationOrder.klatka.pk,
-            "augmentationCode": dataAugmenationOrder.kodAugmentacji,
-            "framePath": dataAugmenationOrder.klatka.getPath(),
-            "pathToSave": dataAugmenationOrder.folder.getPath(),
-            "pointPosition": position,
-            "expectedSize": expectedSize,
-            "orderId": dataAugmenationOrder.pk,
-        }
-        dataAugmenationOrder.wTrakcie = True
-        dataAugmenationOrder.save()
-        return orderDict
+    def orderToDictsList(self, dataAugmenationOrder):
+        positionObjects = self.getInterpolatedPositionsOr404(dataAugmenationOrder.klatka)
+        orderDicts = []
+        for positionObject in positionObjects:
+            position = (positionObject.x, positionObject.y)
+            expectedSize = (dataAugmenationOrder.oczekiwanyRozmiarX, dataAugmenationOrder.oczekiwanyRozmiarY)
+            orderDict = {
+                "frameId": dataAugmenationOrder.klatka.pk,
+                "augmentationCode": dataAugmenationOrder.kodAugmentacji,
+                "framePath": dataAugmenationOrder.klatka.getPath(),
+                "pathToSave": dataAugmenationOrder.folder.getPath(),
+                "pointPosition": position,
+                "expectedSize": expectedSize,
+                "orderId": dataAugmenationOrder.pk,
+                "colorId": dataAugmenationOrder.kolor.pk,
+            }
+            dataAugmenationOrder.wTrakcie = True
+            dataAugmenationOrder.save()
+            orderDicts.append(orderDict)
+
+        return orderDicts
 
     def getMovieFrames(self, movieId):
         frames = Klatka.objects.filter(
@@ -95,9 +100,9 @@ class DataAugmentationOrder(View):
                 oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]
             )
 
-    def getInterpolatedPositionOr404(self, frame):
+    def getInterpolatedPositionsOr404(self, frame):
         try:
-            return PozycjaPunktu.objects.get(
+            return PozycjaPunktu.objects.filter(
                 klatka=frame,
                 status__status__in=[interpolatedPositonStatus]
             )
@@ -199,7 +204,7 @@ class AugmentationProcessStatus(JsonView):
         pass
 
     def _movieAugmentationStatus(self, movie):
-        frames = Klatka.objects.filter(film=movie, pozycja__status__status=interpolatedPositonStatus)
+        frames = Klatka.objects.filter(film=movie, pozycja__status__status=interpolatedPositonStatus) #TODO: sprawdzić
         frameOrderDict = defaultdict(lambda: defaultdict(list))
         for frame in frames:
             self.addFrame(frame, frameOrderDict)

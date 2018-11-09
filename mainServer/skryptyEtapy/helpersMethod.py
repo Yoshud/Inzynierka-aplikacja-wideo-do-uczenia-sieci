@@ -15,6 +15,7 @@ processedFolderName = "Przygotowane"
 endPositionStatus = "Koniec"
 userPositionStatus = "Dodane uzytkownik"
 interpolatedPositonStatus = "Interpolacja"
+noObjectPositionStatus = "Brak"
 
 
 class MyError(Exception):

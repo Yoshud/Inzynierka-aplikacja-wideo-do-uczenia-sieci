@@ -144,42 +144,52 @@ class FramePosition(View):
         try:
             data = json.loads(request.read().decode('utf-8'))
             frameId = data["frameId"]
-            position = data["position"]
-            x = position["x"]
-            y = position["y"]
-            frameObject = Klatka.objects.get(pk=frameId)
-        except:
-            raise Http404
-        try:
+            color = data["color"]
             status = data["status"]
+
+            if not status == noObjectPositionStatus:
+                position = data["position"]
+                x = position["x"]
+                y = position["y"]
+
+            frameObject = Klatka.objects.get(pk=frameId)
+            colorObject = Kolor.objects.get_or_create(nazwa=color)[0]
+
         except KeyError:
-            status = "Dodane uzytkownik"
+            raise HttpResponseBadRequest
         except:
             raise Http404
-        finally:
-            position = self._addPosition(status, x, y, frameObject)
-            if status == endPositionStatus:
-                self.addInterpolationPosition(frameObject)
-            return JsonResponse({"positionId": position[0].pk})
 
-    def _addPosition(self, status, x, y, frameObject):
+        if not status == noObjectPositionStatus:
+            position = self._addPosition(colorObject, status, frameObject, x, y)
+        else:
+            position = self._addPosition(colorObject, status, frameObject)
+
+        if status == endPositionStatus:
+            self.addInterpolationPosition(frameObject, colorObject)
+
+        return JsonResponse({"positionId": position[0].pk})
+
+    def _addPosition(self, color: str, status: str, frameObject, x: int = None, y: int = None):
         statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
 
-        if status in [userPositionStatus, endPositionStatus]:
+        replacedStatuses = [userPositionStatus, endPositionStatus, noObjectPositionStatus]
+        if status in replacedStatuses:
             statusObjects = [
-                StatusPozycji.objects.get_or_create(status=userPositionStatus)[0],
-                StatusPozycji.objects.get_or_create(status=endPositionStatus)[0]
+                StatusPozycji.objects.get_or_create(status=replacedStatus)[0] for replacedStatus in replacedStatuses
             ]
         else:
             statusObjects = [statusObject]
 
         position = PozycjaPunktu.objects.update_or_create(
             klatka=frameObject,
+            kolor=color,
             status__in=statusObjects,
             defaults={
                 "x": x,
                 "y": y,
                 "status": statusObject,
+                "kolor": color,
             }
         )
         return position
@@ -193,6 +203,8 @@ class FramePosition(View):
                     "x": position.x,
                     "y": position.y,
                     "status": position.status.status,
+                    "color": position.kolor.nazwa if position.kolor else None,
+                    "color_code": position.kolor.kod if position.kolor else None,
                     "id": position.pk,
                 } if position else None
 
@@ -237,33 +249,50 @@ class FramePosition(View):
             except:
                 return None
 
-    def findStartFrame(self, frame):
-        firstEndFrame = self.findLastFrameWithEndStatusOrNone(frame)
-        firstEndFrameNr = firstEndFrame.nr if firstEndFrame else 0
+    def findStartFrame(self, frame, colorObject):
+        lastEndFrame = self.findLastFrameWithEndStatusOrNone(frame)
+        lastEndFrameNr = lastEndFrame.nr if lastEndFrame else 0
+
         userFramesAfterLastEndFrame = Klatka.objects\
-            .filter(film=frame.film, nr__gt=firstEndFrameNr, pozycja__status__status=userPositionStatus)\
+            .filter(film=frame.film, nr__gt=lastEndFrameNr,
+                    pozycja__status__status=userPositionStatus, pozycja__kolor=colorObject)\
             .order_by("nr")
         startFrame = userFramesAfterLastEndFrame[0]
 
         return startFrame
 
-    def findAllFramesFromStartToEnd(self, frame):
-        startFrame = self.findStartFrame(frame)
+    def findAllFramesFromStartToEnd(self, frame, colorObject):
+        startFrame = self.findStartFrame(frame, colorObject)
         return Klatka.objects.filter(film=startFrame.film, nr__gte=startFrame.nr, nr__lte=frame.nr)
 
-    def userPositionsXsYsInfo(self, framesFromStartToEnd):
-        def getUserPositionOrNone(frame):
+    def userPositionsXsYsInfo(self, framesFromStartToEnd, colorObject):
+        def getPosition(frame):
             try:
-                return PozycjaPunktu.objects.get(klatka=frame,
-                                                 status__status__in=[userPositionStatus, endPositionStatus])
+                return PozycjaPunktu.objects.get(
+                    klatka=frame, kolor=colorObject,
+                    status__status__in=[userPositionStatus, endPositionStatus, noObjectPositionStatus]
+                )
             except ObjectDoesNotExist:
                 return None
 
-        positions = [
-            getUserPositionOrNone(frame)
-            for frame in framesFromStartToEnd]
+        positions = []
+        withoutPoint = []
+        isAfterNoObjectPositionStatus = False
 
-        return self.xsAndYsFromDicts(self.positionsAsDict(positions))
+        for frame in framesFromStartToEnd:
+            position = getPosition(frame)
+
+            if isAfterNoObjectPositionStatus:
+                withoutPoint.append(frame)
+            else:
+                if position and position.status.status == noObjectPositionStatus:
+                    isAfterNoObjectPositionStatus = True
+                    withoutPoint.append(frame)
+                else:
+                    positions.append(position)
+
+        xs, ys = self.xsAndYsFromDicts(self.positionsAsDict(positions))
+        return xs, ys, withoutPoint
 
     def interpolate(self, xs):
         itsXs = [[it, x] for it, x in enumerate(xs)]
@@ -272,13 +301,18 @@ class FramePosition(View):
         f = interp1d(its, xsNotNone, kind='quadratic', bounds_error=False, fill_value='extrapolate')
         return f(range(len(xs)))
 
-    def addInterpolationPosition(self, frame):
-        frames = self.findAllFramesFromStartToEnd(frame)
-        xs, ys = self.userPositionsXsYsInfo(frames)
+    def addInterpolationPosition(self, frame, colorObject):
+        frames = self.findAllFramesFromStartToEnd(frame, colorObject)
+        xs, ys, withoutPoint = self.userPositionsXsYsInfo(frames, colorObject)
+
         interpolatedXs = self.interpolate(xs)
         interpolatedYs = self.interpolate(ys)
+
         for x, y, frame in zip(interpolatedXs, interpolatedYs, frames):
-            self._addPosition(interpolatedPositonStatus, x, y, frame)
+            self._addPosition(colorObject, interpolatedPositonStatus, frame, x, y)
+
+        for frame in withoutPoint:
+            self._addPosition(colorObject, noObjectPositionStatus, frame)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
