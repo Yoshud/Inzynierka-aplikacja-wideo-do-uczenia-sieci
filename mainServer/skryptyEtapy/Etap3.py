@@ -13,7 +13,7 @@ from ModelML.lossMethod import *
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DataAugmentationOrder(View): #TODO: sprawdzic
+class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których nie ma obiektu
     def get(self, request, **kwargs):
         orders = ZlecenieAugmentacji.objects.filter(wTrakcie=False).order_by("pk")[0:20]
         ordersDict = flatten([self.orderToDictsList(order) for order in orders])
@@ -70,7 +70,8 @@ class DataAugmentationOrder(View): #TODO: sprawdzic
                 "pointPosition": position,
                 "expectedSize": expectedSize,
                 "orderId": dataAugmenationOrder.pk,
-                "colorId": dataAugmenationOrder.kolor.pk,
+                "colorId": positionObject.kolor.pk if positionObject.kolor else None,
+                "colorName": positionObject.kolor.nazwa if positionObject.kolor else None,
             }
             dataAugmenationOrder.wTrakcie = True
             dataAugmenationOrder.save()
@@ -123,14 +124,15 @@ class ImageAfterDataAugmentation(JsonView):
         imageName = self._get_data_or_error("imageName")
         methodCode = self._get_data_or_error("methodCode")
         orderId = self._get_data_or_error("orderId")
+        colorId = self._get_data_or_error("colorId")
 
-        self.addImage(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId)
+        self.addImage(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId)
         return JsonResponse({"ok": True})
 
     def get_method(self):
         pass
 
-    def addImage(self, pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId):
+    def addImage(self, pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId):
         status = StatusPozycjiCrop.objects.get_or_create(status="punktOrginalny")[0]
         cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
         image = ObrazPoDostosowaniu.objects.create(
@@ -139,12 +141,14 @@ class ImageAfterDataAugmentation(JsonView):
             klatkaMacierzysta_id=frameId,
             nazwa=imageName,
             metoda=methodCode,
-            zlecenie_id=orderId
+            zlecenie_id=orderId,
+            kolor_id=colorId,
         )
 
         PozycjaPunktuPoCrop.objects.create(
             obraz=image, status=status,
-            x=int(float(pointPosition[0])), y=int(float(pointPosition[1]))
+            x=int(float(pointPosition[0])), y=int(float(pointPosition[1])),
+            kolor=colorId,
         )
 
 

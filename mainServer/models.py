@@ -150,6 +150,7 @@ class ObrazPoDostosowaniu(models.Model):
     nazwa = models.TextField(default="", blank=True, null=True)
     metoda = models.CharField(max_length=1, choices=METHODS)
     zlecenie = models.ForeignKey("ZlecenieAugmentacji", on_delete=models.CASCADE, null=True)
+    kolor = models.ForeignKey("Kolor", on_delete=models.CASCADE, null=True)
     # PozycjaPunktuPoCrop w polu oddzielnym
 
     def getPath(self):
@@ -168,7 +169,7 @@ class ZlecenieAugmentacji(models.Model):
     oczekiwanyRozmiarX = models.IntegerField("x")
     oczekiwanyRozmiarY = models.IntegerField("y")
     wTrakcie = models.BooleanField(default=False)
-    kolor = models.ForeignKey("Kolor", related_name="zlecenie", on_delete=models.CASCADE, blank=True, null=True)
+    # kolor = models.ForeignKey("Kolor", related_name="zlecenie", on_delete=models.CASCADE, blank=True, null=True)
 
 
 # Konieć CZ1:
@@ -216,7 +217,7 @@ class Uczenie(
     opis = models.TextField(blank=True, null=True)
     wynik = models.OneToOneField("WynikUczenia", related_name="learn", blank=True, null=True, on_delete=models.CASCADE)
     parametry = models.ForeignKey("ParametryUczenia", on_delete=models.CASCADE)
-    kolor = models.ForeignKey("Kolor", related_name="uczenie", on_delete=models.CASCADE, blank=True, null=True)
+    # kolor = models.ForeignKey("Kolor", related_name="uczenie", on_delete=models.CASCADE, blank=True, null=True)
     zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True)
 
 

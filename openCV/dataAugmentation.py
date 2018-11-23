@@ -10,7 +10,7 @@ urlResponse = "http://localhost:8000/imageAfterDataAugmentation"
 connection = InternalConnection(url, urlResponse)
 
 
-def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId):
+def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId):
     payload = {
         "pointPosition": list(pointPosition.astype(str)),
         "cropPosition": list(cropPosition.astype(str)),
@@ -20,6 +20,7 @@ def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, imageName,
         "imageName": imageName,
         "methodCode": methodCode,
         "orderId": orderId,
+        "colorId": colorId
     }
     return connection.sendResponse(payload)
 
@@ -58,11 +59,13 @@ def processOrders(data):
         path = order["framePath"]
         frameId = order["frameId"]
         orderId = order["orderId"]
+        color = order["colorName"]
+        colorId = order["colorId"]
         fileName, fileSufix = fileNameAndSufixFromPath(path)
 
         imgs = process(path, order["pointPosition"], order["augmentationCode"], order["expectedSize"])
         for imgDict in imgs:
-            imgName = "{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), fileSufix)
+            imgName = "{}_{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), color, fileSufix)
             fullPathToSave = os.path.join(pathToSave, imgName).replace('\\', '/')
 
             if cv2.imwrite(fullPathToSave, imgDict["img"], [cv2.IMWRITE_PNG_COMPRESSION, 0]):
@@ -74,6 +77,7 @@ def processOrders(data):
                     resizeScale=imgDict["resizeScale"],
                     methodCode=imgDict["orginalMethodCode"],
                     orderId=orderId,
+                    colorId=colorId
                 )
     return waitForOrders, None
 

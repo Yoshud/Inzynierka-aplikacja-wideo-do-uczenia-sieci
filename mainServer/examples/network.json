@@ -1,13 +1,13 @@
 {
     "conv_networks_dicts" : [
         {"filters": 4, "window": [3, 3], "max_pool": 2},
-        {"filters": 8, "window": [3, 3], "max_pool": 1},
-        {"filters": 16, "window": [4, 4], "max_pool": 2},
-        {"filters": 32, "window": [4, 4], "max_pool": 1},
-        {"filters": 64, "window": [6, 6], "max_pool": 1},
-        {"filters": 32, "window": [6, 6], "max_pool": 1},
+        {"filters": 4, "window": [3, 3], "max_pool": 1},
+        {"filters": 4, "window": [4, 4], "max_pool": 2},
+        {"filters": 8, "window": [4, 4], "max_pool": 1},
+        {"filters": 8, "window": [6, 6], "max_pool": 1},
+        {"filters": 16, "window": [6, 6], "max_pool": 1},
         {"filters": 16, "window": [8, 8], "max_pool": 1},
-        {"filters": 8, "window": [10, 10], "max_pool": 1}
+        {"filters": 16, "window": [10, 10], "max_pool": 1}
     ],
     "full_connected_network_dicts" : [
         {"size": 400, "relu": true, "dropout": true},

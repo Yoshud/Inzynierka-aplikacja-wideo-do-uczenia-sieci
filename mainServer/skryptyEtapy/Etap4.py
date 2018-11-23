@@ -42,7 +42,7 @@ class DivideIntoSets(View): #TODO: sprawdzic
                 klatkaMacierzysta__film__sesja_id=sessionId,
                 zlecenie__oczekiwanyRozmiarY=imgSizeY,
                 zlecenie__oczekiwanyRozmiarX=imgSizeX,
-                zlecenie__kolor=colorObject,
+                kolor=colorObject,
             )
             allImagesObjects = np.random.permutation(allImagesObjects)
 
@@ -90,16 +90,18 @@ class Learn(View): #TODO: sprawdzic
 
         return JsonResponse({"learnObjectPks": learnObjectPks})
 
-    def get(self, request, **kwargs): #TODO: dodać kolor tak by zapisywały do innych plików
+    def get(self, request, **kwargs):
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
-            parameters = self.parametersToDict(learnObject)
+            color = learnObject.zbiory.kolor.nazwa if learnObject.zbiory and learnObject.zbiory.kolor else ""
+            parameters = self.parametersToDict(learnObject, color)
             responseData = {
-                "trainSet": self.setData(learnObject.parametry.zbiory.uczacy),
-                "validatorSet": self.setData(learnObject.parametry.zbiory.walidacyjny),
-                "testSet": self.setData(learnObject.parametry.zbiory.testowy),
+                "trainSet": self.setData(learnObject.zbiory.uczacy),
+                "validatorSet": self.setData(learnObject.zbiory.walidacyjny),
+                "testSet": self.setData(learnObject.zbiory.testowy),
                 "parameters": parameters,
                 "learn_id": learnObject.pk,
+                "color": learnObject.zbiory.kolor.nazwa if learnObject.zbiory and learnObject.zbiory.kolor else ""
             }
             learnObject.statusNauki = 'T'
         except:
@@ -108,6 +110,7 @@ class Learn(View): #TODO: sprawdzic
 
     def addLearnObject(self, description, parametersId, dataSetId):
         learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId, zbiory_id=dataSetId)
+        return learnObject.pk
 
     def setData(self, set):
         setPathsWithPositions = [
@@ -117,10 +120,15 @@ class Learn(View): #TODO: sprawdzic
         setPathsWithPositions = [[patch, [position.x, position.y]] for patch, position in setPathsWithPositions]
         return setPathsWithPositions
 
-    def parametersToDict(self, learnObject):
+    def parametersToDict(self, learnObject, color):
         parameters = learnObject.parametry
         pathToCreate = Path(os.path.join(parameters.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)))
         pathToCreate.mkdir(parents=True, exist_ok=True)
+
+        modelFile = os.path.join(
+            parameters.zbiory.sesja.folderModele.getPath(),
+            "model_{}_{}".format(learnObject.pk, color)
+        )
 
         return { # nie zmieniac kluczy gdyz uzywane później(learnResponse) jako **kwargs dla funkcji
             "learning_rate": parameters.learning_rate,
@@ -132,13 +140,13 @@ class Learn(View): #TODO: sprawdzic
             "network": json.loads(parameters.modelSieci.opisXML),
             "img_size_x": parameters.modelSieci.inputSizeX,
             "img_size_y": parameters.modelSieci.inputSizeY,
-            "model_file": os.path.join(parameters.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)),
+            "model_file": modelFile,
             "others": json.loads(parameters.opisUczeniaXML),
         }
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class LearnResults(JsonView): #TODO: dodać kolor (pierwszo na bazie) + na nauce tak by zapisywał je do innych plików!!
+class LearnResults(JsonView):
     def post_method(self):
         data = self._data
         learn_result = WynikUczenia.objects.create(**data["result"])
