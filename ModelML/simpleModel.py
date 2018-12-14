@@ -9,16 +9,6 @@ import sys
 log = open("log.txt", "w")
 sys.stderr = log
 sys.stdout = log
-# def write_out(data, log=log):
-#     print(data)
-#     string = str(data)
-#     log.write(string)
-
-# standaryzation
-def standarize(data):
-    mean = data.mean(axis=0)
-    std = data.std(axis=0)
-    return (data - mean) / (std + 0.00001)
 
 
 def conv2d(img, w, b):
@@ -109,7 +99,7 @@ def init_fc_variables(fc_network_dicts, conv_out_size):
     return fc_network_variables_dicts
 
 
-def test_model(sess: tf.Session, data_picker: Data_picker, batch_size, pred, x, keep_prob): #zdefiniować pobieranie danych testowych
+def test_model(sess: tf.Session, data_picker: Data_picker, pred, x, keep_prob): #zdefiniować pobieranie danych testowych
     errors = []
     test_batch_x, test_batch_y = data_picker.test_batch()
     while len(test_batch_x):
@@ -136,8 +126,9 @@ def test_model(sess: tf.Session, data_picker: Data_picker, batch_size, pred, x, 
     return result
 
 
-def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout, conv_networks_dicts,
+def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout, conv_networks_dicts,
           full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, model_file: str, channels=3, **kwargs):
+
     n_input = img_size_x * img_size_y
 
     # tf graph input, output...
@@ -188,4 +179,4 @@ def train(batch_size, training_iters, save_step, epoch_size, img_size_x, img_siz
         end_epoch = dt.datetime.now()
         print("Optimization Finished, end={} duration={}".format(end_epoch, end_epoch - start_epoch), flush=True)
 
-        return {**test_model(sess, data_picker, batch_size, pred, x, keep_prob), **{"model_file": model_file}}
+        return {**test_model(sess, data_picker, pred, x, keep_prob), **{"model_file": model_file}}

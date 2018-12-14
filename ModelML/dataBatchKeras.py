@@ -1,5 +1,4 @@
 import numpy as np
-import os
 from scipy.misc import imread
 
 
@@ -56,60 +55,62 @@ class Get_next_batch:
 class Data_picker:
     def __init__(self, batch_size, epoch_size, training_iters, img_size, train_patches_with_positions,
                  test_patches_with_positions=list(), validate_patches_with_positions=list(), randomize=True,
-                 max_size_of_draw=10000, loadData=False):
-        self._batch_size = batch_size
-        self._epoch_size = epoch_size
-        self._training_iters = training_iters
-        self._train_patches_with_positions = train_patches_with_positions
-        self._randomize = randomize
+                 max_size_of_draw=10000):
         self._img_size = img_size
 
-        self._number_of_draw = int(training_iters / epoch_size) + 1
-        self._size_of_draw = int(batch_size * epoch_size / 4)  # poprawic
-        self._size_of_draw = min(max_size_of_draw, self._size_of_draw, len(train_patches_with_positions))
+        size_of_batch = min(max_size_of_draw, int(batch_size * epoch_size), len(train_patches_with_positions))
+        size_of_batch_test = min(max_size_of_draw, int(batch_size * epoch_size), len(test_patches_with_positions))
+        size_of_batch_validation = min(
+            max_size_of_draw, int(batch_size * epoch_size), len(validate_patches_with_positions)
+        )
+        size_of_draw_tmp = int(batch_size * epoch_size / 4)
+        size_of_draw = min(max_size_of_draw, size_of_draw_tmp, len(train_patches_with_positions))
+        size_of_draw_validation = min(max_size_of_draw, size_of_draw_tmp, len(validate_patches_with_positions))
+        
+        k = 2 if len(validate_patches_with_positions) > size_of_batch/8 else 1 
 
         if randomize:
             if batch_size * training_iters > len(train_patches_with_positions):
-                self._load_method = \
-                    Get_next_batch(self._train_patches_with_positions, self._size_of_draw, full_random=True).get
-                self._batch_functor = Get_next_batch([], batch_size, full_random=True)
+                self._load_method = Get_next_batch(train_patches_with_positions, size_of_draw/k, full_random=True).get
             else:
                 self._load_method = \
-                    Get_next_batch(self._train_patches_with_positions, int(batch_size * epoch_size),
-                                   full_random=False).get
-                self._batch_functor = Get_next_batch([], batch_size, full_random=False)
+                    Get_next_batch(train_patches_with_positions, size_of_batch/k, full_random=False).get
+                
+            if batch_size * training_iters > len(validate_patches_with_positions):
+                self._validation_load_method = \
+                    Get_next_batch(validate_patches_with_positions, size_of_draw_validation/k, full_random=True).get
+            else:
+                self._validation_load_method = \
+                    Get_next_batch(validate_patches_with_positions, size_of_batch_validation/k, full_random=False).get
+        
         else:
             self._load_method = \
-                Get_next_batch(self._train_patches_with_positions, int(batch_size * epoch_size), full_random=False,
-                               randomize=False).get
-            self._batch_functor = Get_next_batch([], batch_size, full_random=False, randomize=False)
+                Get_next_batch(train_patches_with_positions, size_of_batch/k, full_random=False, randomize=False).get
+            
+            self._validation_load_method = \
+                Get_next_batch(
+                    validate_patches_with_positions, size_of_batch_validation/k, full_random=False, randomize=False
+                ).get
 
-        self._test_load_functor = \
-            Get_next_batch(test_patches_with_positions, int(batch_size), without_loop=True).get
+        self._test_load_method = \
+            Get_next_batch(test_patches_with_positions, size_of_batch_test, without_loop=True).get
 
-        if loadData:
-            self._data = self._load_method()
-
-    def data_batch(self, iter):
-        if not iter % self._epoch_size:  # naprawic, bo prawdopodobnie zle dziala
-            X, Y = self._return_from_patches_with_positions(self._load_method())
-            self._data = list(zip(*(X, Y)))
-            self._batch_functor.data(self._data)
-
-        return zip(*self._batch_functor.get())
-
-    def test_batch(self):
-        return self._return_from_patches_with_positions(self._test_load_functor())
+    def load_test_data(self):
+        return self._return_from_patches_with_positions(self._test_load_method())
 
     def load_data(self):
         return self._return_from_patches_with_positions(self._load_method())
 
-    def _standarize(self, data):
+    def load_validation_data(self):
+        return self._return_from_patches_with_positions(self._validation_load_method())
+
+    @staticmethod
+    def _standarize(data):
         mean = data.mean(axis=0)
         std = data.std(axis=0)
         return (data - mean) / (std + 0.00001)
 
-    def _return_from_patches_with_positions(self, patches_with_positions, standarize=False):
+    def _return_from_patches_with_positions(self, patches_with_positions, standarize=True):
         imgN = self._img_size[0] * self._img_size[1] * 3
         X = np.zeros([len(patches_with_positions), imgN])
         Y = np.zeros([len(patches_with_positions), 2])
@@ -123,6 +124,3 @@ class Data_picker:
                 print(path)
 
         return (self._standarize(X), Y) if standarize else (X, Y)
-
-    def _load_method_template(self, load_method):
-        return self._return_from_patches_with_positions(load_method())

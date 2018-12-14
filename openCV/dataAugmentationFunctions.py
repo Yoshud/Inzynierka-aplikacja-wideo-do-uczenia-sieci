@@ -21,7 +21,6 @@ def flipPointPosition(position, imgShape, flipType):
 def cropAndResizeNewPointPosition(pointPosition, cropPosition, imgShape, expectedSize, cropScale=0.8):
     expectedSize = np.array(expectedSize)
     imgHeight = imgShape[0]
-    # imgSize = np.array(imgShape[1::-1])
     positionTowardCropCenter = -(cropPosition - pointPosition)
     positionTowardCropCenterAfterResize = expectedSize[0] / (cropScale * imgHeight) * positionTowardCropCenter
     positionTowardLeftTopCorner = expectedSize / 2 + positionTowardCropCenterAfterResize
