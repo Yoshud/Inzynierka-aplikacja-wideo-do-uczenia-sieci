@@ -1,6 +1,6 @@
 import time
-from ModelML.simpleModel import train
-from ModelML.dataBatch import Data_picker
+from ModelML.simpleModelKeras import train
+from ModelML.dataBatchKeras import Data_picker
 from ModelML.optimizerMethod import optimizeMethodDict
 from ModelML.lossMethod import lossMethodDict
 from internalConnection.InternalConnection import InternalConnection

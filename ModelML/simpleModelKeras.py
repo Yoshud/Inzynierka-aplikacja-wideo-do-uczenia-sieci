@@ -5,6 +5,9 @@ from math import ceil, floor
 from keras.utils import plot_model
 from keras.models import load_model
 
+from ModelML.lossMethod import Norm2Loss
+
+
 class Model:
     def __init__(self, dropout: float, img_size_x: int, img_size_y: int, channels: int = 3):
         self.model = Sequential()
@@ -67,6 +70,17 @@ class Model:
         return self.model
 
 
+def test(model:Model, batch_size: int, data_picker: Data_picker, **kwargs):
+    is_loaded = True
+    results = list()
+
+    while is_loaded:
+        X, Y, is_loaded = data_picker.load_test_data()
+        results.extend(model.model.evaluate(X, Y, batch_size=batch_size))
+
+    return results
+
+
 def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout, conv_networks_dicts, batch_size,
           full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, model_file: str, channels=3,
           **kwargs):
@@ -78,7 +92,7 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
     model.compile(
         loss=loss_fun,
         optimizer=optimizer_type,
-        metrics='accuracy',
+        metrics=['mse', Norm2Loss.get],
     )
 
     plot_model(model, to_file='model.png')
@@ -87,7 +101,7 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
     epochs_to_save = max(1, floor(save_step / epoch_size))
 
     for epoch in range(number_of_epoch):
-        model.fit(
+        train_history = model.fit(
             *data_picker.load_data(),
             batch_size=batch_size,
             validation_data=data_picker.load_validation_data(),
@@ -100,6 +114,8 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
             model.model.save(f"{model_file}_epoch{epoch}.h5")
 
         model.model.save(f"{model_file}.h5")
+
+
 
     ##TODO: add testing model
 

@@ -1,6 +1,6 @@
 django
-tensorboard==1.8.0
-tensorflow==1.8.0
+tensorboard==1.11.0
+tensorflow==1.11.0
 numpy==1.14.5
 opencv-python
 requests
@@ -8,3 +8,10 @@ scipy
 django-cors-headers==2.4.0
 psycopg2
 Pillow
+gphoto2==1.8.5
+Keras==2.2.4
+PTP==0.4.2
+pyusb
+tb-nightly
+tf-nightly
+tf-nightly-gpu

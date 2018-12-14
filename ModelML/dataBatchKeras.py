@@ -96,7 +96,9 @@ class Data_picker:
             Get_next_batch(test_patches_with_positions, size_of_batch_test, without_loop=True).get
 
     def load_test_data(self):
-        return self._return_from_patches_with_positions(self._test_load_method())
+        data = self._test_load_method()
+        X, Y = self._return_from_patches_with_positions(data)
+        return X, Y, len(data) > 0
 
     def load_data(self):
         return self._return_from_patches_with_positions(self._load_method())
