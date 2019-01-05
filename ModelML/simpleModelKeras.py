@@ -50,8 +50,6 @@ class Model:
             raise AttributeError
 
         layer_args = dict(
-            # filters=conv_network_dict["filters"],
-            # kernel_size=conv_network_dict["window"],
             padding='same',
             activation='relu',
             **conv_network_dict,
@@ -106,8 +104,8 @@ def test(model:Model, batch_size: int, data_picker: Data_picker, **kwargs):
 
 
 def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout, conv_networks_dicts, batch_size,
-          full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, model_file: str, channels=3,
-          **kwargs):
+          full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, model_file: str,
+          epoch_per_one_data_laod: int = 2, channels=3, **kwargs):
     model = Model(dropout, img_size_x, img_size_y, channels)
 
     model.add_conv_layers(conv_networks_dicts)
@@ -124,23 +122,23 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
     epochs_to_save = max(1, floor(save_step / epoch_size))
 
     for epoch in range(number_of_epoch):
+        if not epoch % epoch_per_one_data_laod:
+            X, Y = data_picker.load_data()
+            validation_data = data_picker.load_validation_data()
+
         train_history = model.fit(
-            *data_picker.load_data(),
+            X, Y,
             batch_size=batch_size,
-            validation_data=data_picker.load_validation_data(),
+            validation_data=validation_data,
             epochs=epoch+1,
-            steps_per_epoch=2,
-            # steps_per_epoch=epoch_size,
             initial_epoch=epoch,
-            # validation_steps=10
-        ) #TODO: inne liczenie epoch
+        )
+
         if not epoch % epochs_to_save:
             model.model.save(f"{model_file}_epoch{epoch}.h5")
 
         model.model.save(f"{model_file}.h5")
 
-
         train_history
-    ##TODO: add testing model
 
-    ##TODO: add postgres
+    ##TODO: add testing model
