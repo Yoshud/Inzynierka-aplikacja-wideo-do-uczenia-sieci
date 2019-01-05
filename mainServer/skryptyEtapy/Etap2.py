@@ -144,7 +144,8 @@ class FramePosition(View):
         try:
             data = json.loads(request.read().decode('utf-8'))
             frameId = data["frameId"]
-            color = data["color"]
+            # color = data["color"]
+            color = "testowy"
             status = data["status"]
 
             if not status == noObjectPositionStatus:

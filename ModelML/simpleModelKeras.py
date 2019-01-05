@@ -18,7 +18,7 @@ class Model:
             "FC": self._add_fc_classifier
         }
 
-    def add_classifier(self, classifier_type="FC", classifier_kwargs: dict={}):
+    def add_classifier(self, classifier_type="FC", classifier_kwargs: dict=dict()):
         self.classifiers[classifier_type](**classifier_kwargs)
 
     def add_conv_layers(self, conv_network_dicts: list):
@@ -27,7 +27,7 @@ class Model:
         for conv_network_dict in conv_network_dicts[1:]:
             self._add_conv_layer(conv_network_dict=conv_network_dict)
 
-            self.model.add(Flatten())
+        self.model.add(Flatten())
 
         return self.model
 
@@ -37,10 +37,21 @@ class Model:
     def fit(self, *args, **kwargs):
         return self.model.fit(*args, **kwargs)
 
-    def _add_conv_layer(self, conv_network_dict: dict, max_pool: int = 1, input_shape: list = None):
+    def _add_conv_layer(self, conv_network_dict: dict, max_pool: int = None, input_shape: list = None):
+        if 'window' in conv_network_dict:
+            if 'kernel_size' not in conv_network_dict:
+                conv_network_dict['kernel_size'] = conv_network_dict.pop('window')
+            else:
+                raise AttributeError
+
+        if max_pool is None or 'max_pool' in conv_network_dict:
+            max_pool = conv_network_dict.pop('max_pool')
+        else:
+            raise AttributeError
+
         layer_args = dict(
-            filters=conv_network_dict["filters"],
-            kernel_size=conv_network_dict["window"],
+            # filters=conv_network_dict["filters"],
+            # kernel_size=conv_network_dict["window"],
             padding='same',
             activation='relu',
             **conv_network_dict,
@@ -48,18 +59,30 @@ class Model:
         if input_shape:
             layer_args['input_shape'] = input_shape
 
-        self.model.add(Conv2D(layer_args))
+        self.model.add(Conv2D(**layer_args))
         self.model.add(MaxPooling2D([max_pool, max_pool], padding='same')) if max_pool > 1 else None
         self.model.add(Dropout(self.dropout))
 
     def _add_fc_layer(self, full_connected_network_dict: dict):
-        layer_args = dict(units=full_connected_network_dict['size'], **full_connected_network_dict)
+        layer_args = dict(**full_connected_network_dict)
+        if 'size' in layer_args:
+            if 'units' not in layer_args:
+                layer_args['units'] = layer_args.pop('size')
+            else:
+                raise AttributeError
 
-        if full_connected_network_dict['relu']:
-            layer_args['activation'] = 'relu'
+        if 'relu' in layer_args:
+            if layer_args['relu']:
+                layer_args['activation'] = 'relu'
 
-            self.model.add(Dense(**layer_args))
-            self.model.add(Dropout(self.dropout)) if full_connected_network_dict['dropout'] else None
+            layer_args.pop('relu')
+
+        using_dropout = False
+        if 'dropout' in layer_args and layer_args.pop('dropout'):
+            using_dropout = True
+
+        self.model.add(Dense(**layer_args)) #TODO: keyword argument dropout not know
+        self.model.add(Dropout(self.dropout)) if using_dropout else None
 
         return self.model
 
@@ -78,6 +101,7 @@ def test(model:Model, batch_size: int, data_picker: Data_picker, **kwargs):
         X, Y, is_loaded = data_picker.load_test_data()
         results.extend(model.model.evaluate(X, Y, batch_size=batch_size))
 
+    results
     return results
 
 
@@ -87,15 +111,14 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
     model = Model(dropout, img_size_x, img_size_y, channels)
 
     model.add_conv_layers(conv_networks_dicts)
-    model.add_classifier("FC", full_connected_network_dicts)
-
+    model.add_classifier("FC", {"full_connected_network_dicts": full_connected_network_dicts})
     model.compile(
         loss=loss_fun,
         optimizer=optimizer_type,
-        metrics=['mse', Norm2Loss.get],
+        metrics=['mse', Norm2Loss().get],
     )
 
-    plot_model(model, to_file='model.png')
+    # plot_model(model, to_file='model.png')
 
     number_of_epoch = max(1, ceil(training_iters / epoch_size))
     epochs_to_save = max(1, floor(save_step / epoch_size))
@@ -106,17 +129,18 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
             batch_size=batch_size,
             validation_data=data_picker.load_validation_data(),
             epochs=epoch+1,
-            steps_per_epoch=epoch_size,
+            steps_per_epoch=2,
+            # steps_per_epoch=epoch_size,
             initial_epoch=epoch,
-            validation_step=10
-        )
+            # validation_steps=10
+        ) #TODO: inne liczenie epoch
         if not epoch % epochs_to_save:
             model.model.save(f"{model_file}_epoch{epoch}.h5")
 
         model.model.save(f"{model_file}.h5")
 
 
-
+        train_history
     ##TODO: add testing model
 
     ##TODO: add postgres

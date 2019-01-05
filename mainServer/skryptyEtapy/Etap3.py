@@ -90,7 +90,7 @@ class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których ni
         augmentationOrderCountForFrame = ZlecenieAugmentacji.objects \
             .filter(klatka=frame, oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]) \
             .count()
-        noAugmentationOrderForFrame = augmentationOrderCountForFrame == 0
+        noAugmentationOrderForFrame = (augmentationOrderCountForFrame == 0)
 
         if noAugmentationOrderForFrame:
             # folder = FolderZPrzygotowanymiObrazami.objects.get_or_create(sciezka=dataAugmentationFolderPath)[0]
@@ -148,7 +148,7 @@ class ImageAfterDataAugmentation(JsonView):
         PozycjaPunktuPoCrop.objects.create(
             obraz=image, status=status,
             x=int(float(pointPosition[0])), y=int(float(pointPosition[1])),
-            kolor=colorId,
+            kolor_id=colorId,
         )
 
 

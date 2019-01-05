@@ -18,7 +18,8 @@ class DivideIntoSets(View): #TODO: sprawdzic
             dataSetsRatios = data["dataSetRatios"]
             sessionId = data["sessionId"]
 
-            networkId = data["networkId"]
+            # networkId = data["networkId"]
+            networkId = 1
         except:
             raise HttpResponseBadRequest
 
@@ -95,10 +96,11 @@ class Learn(View): #TODO: sprawdzic
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
             color = learnObject.zbiory.kolor.nazwa if learnObject.zbiory and learnObject.zbiory.kolor else ""
             parameters = self.parametersToDict(learnObject, color)
+
             responseData = {
-                "trainSet": self.setData(learnObject.zbiory.uczacy),
-                "validatorSet": self.setData(learnObject.zbiory.walidacyjny),
-                "testSet": self.setData(learnObject.zbiory.testowy),
+                "trainSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory)),
+                "validatorSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryWalidacyjny=learnObject.zbiory)),
+                "testSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryTestowy=learnObject.zbiory)),
                 "parameters": parameters,
                 "learn_id": learnObject.pk,
                 "color": learnObject.zbiory.kolor.nazwa if learnObject.zbiory and learnObject.zbiory.kolor else ""
@@ -106,6 +108,7 @@ class Learn(View): #TODO: sprawdzic
             learnObject.statusNauki = 'T'
         except:
             raise Http404
+
         return JsonResponse(responseData)
 
     def addLearnObject(self, description, parametersId, dataSetId):
@@ -114,19 +117,20 @@ class Learn(View): #TODO: sprawdzic
 
     def setData(self, set):
         setPathsWithPositions = [
-            [imgObject.getPath(), imgObject.pozycja.filter(status__status="punktOrginalny")[0]]
+            [imgObject.getPath(), imgObject.pozycja.filter(status__status="punktOrginalny").first()]
             for imgObject in set.iterator()
         ]
+
         setPathsWithPositions = [[patch, [position.x, position.y]] for patch, position in setPathsWithPositions]
         return setPathsWithPositions
 
     def parametersToDict(self, learnObject, color):
         parameters = learnObject.parametry
-        pathToCreate = Path(os.path.join(parameters.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)))
+        pathToCreate = Path(os.path.join(learnObject.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)))
         pathToCreate.mkdir(parents=True, exist_ok=True)
 
         modelFile = os.path.join(
-            parameters.zbiory.sesja.folderModele.getPath(),
+            learnObject.zbiory.sesja.folderModele.getPath(),
             "model_{}_{}".format(learnObject.pk, color)
         )
 
