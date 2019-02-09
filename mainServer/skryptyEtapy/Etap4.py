@@ -11,7 +11,7 @@ import numpy as np
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DivideIntoSets(View): #TODO: sprawdzic
+class DivideIntoSets(View):
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         try:
@@ -32,7 +32,7 @@ class DivideIntoSets(View): #TODO: sprawdzic
 
         detaSetObjectsPks = {
             colorObject.nazwa:  self.divideImagesIntoSets(sessionId, imgSizeY, imgSizeX, dataSetsRatios, colorObject)
-            for colorObject in Kolor.objects.all()
+            for colorObject in Kolor.objects.filter(zbiorkolorow__sesja_id=sessionId) #TODO: sprawdzic
         }
 
         return JsonResponse({"dataSetIds": detaSetObjectsPks})
@@ -72,7 +72,7 @@ class DivideIntoSets(View): #TODO: sprawdzic
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class Learn(View): #TODO: sprawdzic
+class Learn(View):
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
 

@@ -133,7 +133,7 @@ class ImageAfterDataAugmentation(JsonView):
         pass
 
     def addImage(self, pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId):
-        status = StatusPozycjiCrop.objects.get_or_create(status="punktOrginalny")[0]
+        status = StatusPozycjiCrop.objects.get(status="punktOrginalny") #TODO: dodać więcej statusów crop xD
         cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
         image = ObrazPoDostosowaniu.objects.create(
             pozycjaCropa=cropPositionObject,
@@ -208,7 +208,7 @@ class AugmentationProcessStatus(JsonView):
         pass
 
     def _movieAugmentationStatus(self, movie):
-        frames = Klatka.objects.filter(film=movie, pozycja__status__status=interpolatedPositonStatus) #TODO: sprawdzić
+        frames = Klatka.objects.filter(film=movie, pozycja__status__status=interpolatedPositonStatus)
         frameOrderDict = defaultdict(lambda: defaultdict(list))
         for frame in frames:
             self.addFrame(frame, frameOrderDict)

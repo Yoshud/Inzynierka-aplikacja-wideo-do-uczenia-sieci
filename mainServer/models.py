@@ -21,10 +21,17 @@ class StatusPozycjiCrop(Status):
     pass
 
 
-class Kolor(models.Model): #TODO: podpiąć kolory pod sesje tak by dla danej sesji mogły być różne kolory
+class Kolor(models.Model):
     nazwa = models.CharField("nazwa", max_length=100, null=True, blank=True, unique=True)
     kod = models.CharField("kod", max_length=100, null=True, blank=True)
 
+
+class ZbiorKolorow(models.Model):
+    nazwa = models.CharField("nazwa", max_length=100, null=True, blank=True, unique=True)
+    kolory = models.ManyToManyField("Kolor", blank=True)
+    domyslny_kolor = models.ForeignKey(
+        "Kolor", related_name="zbior_domyslny_kolor", blank=True, null="True", on_delete=models.SET_NULL
+    )
 
 class Punkt(models.Model):
     x = models.IntegerField("x", default=0, null=True, blank=True)
@@ -247,7 +254,7 @@ class WynikPrzetwarzania(models.Model):
 
 # koniecCZ2
 
-class Sesja(models.Model): #TODO: nowa encja która ma kolory many-many i to ona decyduje kte kolory są dostępne dla sesji (lub niezdefiniowane)
+class Sesja(models.Model):
     folderZObrazami = models.OneToOneField("FolderZObrazami", on_delete=models.CASCADE)
     filmyPrzetworzone = models.ManyToManyField("Film", related_name="sesjaPrzetworzone", blank=True)
     filmyUzytkownik = models.ManyToManyField("Film", related_name="sesjaUzytkownika", blank=True)
@@ -257,3 +264,7 @@ class Sesja(models.Model): #TODO: nowa encja która ma kolory many-many i to ona
     nazwa = models.TextField(default="Nienazwana_{}".format(timezone.now()))
     ostatniaAktualizacja = models.DateTimeField(default=timezone.now)
     sciezka = models.FilePathField(default="", blank=True, null=True)
+    zbiorKolorow = models.ForeignKey(
+        "ZbiorKolorow", on_delete=models.deletion.PROTECT,
+        default=ZbiorKolorow.objects.get(nazwa="Domyslny zestaw").pk
+    )

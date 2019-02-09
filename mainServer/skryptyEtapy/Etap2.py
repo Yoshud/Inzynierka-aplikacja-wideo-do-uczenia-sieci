@@ -22,8 +22,8 @@ class ReturnMoviesToProcess(View):
         })
 
     def addMovieToMoviesDict(self, movie,
-                             statusToRemove=StatusFilmu.objects.get_or_create(status="Do przetworzenia")[0],
-                             statusToAdd=StatusFilmu.objects.get_or_create(status="W trakcie przetwarzania")[0]):
+                             statusToRemove=StatusFilmu.objects.get(status="Do przetworzenia"),
+                             statusToAdd=StatusFilmu.objects.get(status="W trakcie przetwarzania")):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         return {
@@ -49,8 +49,8 @@ class MovieProcessed(JsonView):
         pass
 
     def addToProcessedMovies(self, movie, frames,
-                             statusToRemove=StatusFilmu.objects.get_or_create(status="W trakcie przetwarzania")[0],
-                             statusToAdd=StatusFilmu.objects.get_or_create(status="Przetworzono")[0]):
+                             statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
+                             statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         for frameInfo in frames:
@@ -68,7 +68,7 @@ class GetNextMovie(JsonView):
         previousMovieId = self._get_data("previousMovieId", None)
         if previousMovieId:
             previousMovie = Film.objects.get(pk=previousMovieId)
-            statusToAdd = StatusFilmu.objects.get_or_create(status="Przypisano punkty")[0]
+            statusToAdd = StatusFilmu.objects.get(status="Przypisano punkty")
             removeMultipleStatuses(previousMovie, ["W trakcie obslugi", "Przetworzono"])
             previousMovie.status.add(statusToAdd)
             previousMovie.save()
@@ -77,7 +77,7 @@ class GetNextMovie(JsonView):
             nextMovie = Film.objects \
                 .filter(sesja__pk=sessionId, status__status__in=["Przetworzono"]) \
                 .order_by("data")[0]
-            statusToAdd = StatusFilmu.objects.get_or_create(status="W trakcie obslugi")[0]
+            statusToAdd = StatusFilmu.objects.get(status="W trakcie obslugi")
             nextMovie.status.add(statusToAdd)
         except IndexError:
             movieCount = Film.objects \
@@ -143,18 +143,33 @@ class FramePosition(View):
     def post(self, request, **kwargs):
         try:
             data = json.loads(request.read().decode('utf-8'))
+
             frameId = data["frameId"]
-            # color = data["color"]
-            color = "testowy"
+            frameObject = Klatka.objects.get(pk=frameId)
+
+            colorSetObject = frameObject.film.sesja.zbiorKolorow
+            colorObjects = Kolor.objects.filter(zbiorkolorow=colorSetObject)
+            colors = {colorObject.nazwa for colorObject in colorObjects}
+
+            if "color" in data:
+                color = data["color"]
+                if color not in colors:
+                    raise HttpResponseBadRequest
+
+                colorObject = Kolor.objects.get(nazwa=color)
+            else:
+                if colorSetObject.domyslny_kolor is not None:
+                    colorObject = colorSetObject.domyslny_kolor
+                else:
+                    colorObject = Kolor.objects.get(nazwa=colors.pop())
+
+            #TODO: sprawdzic
             status = data["status"]
 
             if not status == noObjectPositionStatus:
                 position = data["position"]
                 x = position["x"]
                 y = position["y"]
-
-            frameObject = Klatka.objects.get(pk=frameId)
-            colorObject = Kolor.objects.get_or_create(nazwa=color)[0]
 
         except KeyError:
             raise HttpResponseBadRequest
@@ -172,15 +187,22 @@ class FramePosition(View):
         return JsonResponse({"positionId": position[0].pk})
 
     def _addPosition(self, color: str, status: str, frameObject, x: int = None, y: int = None):
-        statusObject = StatusPozycji.objects.get_or_create(status=status)[0]
+        statusObject = StatusPozycji.objects.get(status=status) #TODO: obsługa błedu
 
         replacedStatuses = [userPositionStatus, endPositionStatus, noObjectPositionStatus]
         if status in replacedStatuses:
             statusObjects = [
-                StatusPozycji.objects.get_or_create(status=replacedStatus)[0] for replacedStatus in replacedStatuses
+                StatusPozycji.objects.get(status=replacedStatus) for replacedStatus in replacedStatuses
             ]
         else:
             statusObjects = [statusObject]
+
+        colorSetObject = frameObject.film.sesja.zbiorKolorow
+        colorObjects = Kolor.objects.filter(zbiorkolorow=colorSetObject)
+        colors = {colorObject for colorObject in colorObjects}
+
+        if color not in colors:
+            raise RuntimeError("Color not in color set")
 
         position = PozycjaPunktu.objects.update_or_create(
             klatka=frameObject,

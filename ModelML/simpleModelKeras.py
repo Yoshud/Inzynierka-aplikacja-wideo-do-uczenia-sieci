@@ -79,7 +79,7 @@ class Model:
         if 'dropout' in layer_args and layer_args.pop('dropout'):
             using_dropout = True
 
-        self.model.add(Dense(**layer_args)) #TODO: keyword argument dropout not know
+        self.model.add(Dense(**layer_args))
         self.model.add(Dropout(self.dropout)) if using_dropout else None
 
         return self.model
