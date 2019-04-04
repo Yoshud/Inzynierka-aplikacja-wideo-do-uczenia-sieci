@@ -265,6 +265,5 @@ class Sesja(models.Model):
     ostatniaAktualizacja = models.DateTimeField(default=timezone.now)
     sciezka = models.FilePathField(default="", blank=True, null=True)
     zbiorKolorow = models.ForeignKey(
-        "ZbiorKolorow", on_delete=models.deletion.PROTECT,
-        default=ZbiorKolorow.objects.get(nazwa="Domyslny zestaw").pk
+        "ZbiorKolorow", on_delete=models.deletion.PROTECT
     )

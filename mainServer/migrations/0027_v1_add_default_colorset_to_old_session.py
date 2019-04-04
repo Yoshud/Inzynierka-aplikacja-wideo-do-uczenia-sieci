@@ -16,8 +16,6 @@ def forwards_func(apps, schema_editor):
 
 
 def reverse_func(apps, schema_editor):
-    # forwards_func() creates two Country instances,
-    # so reverse_func() should delete them.
     pass
 
 
@@ -34,7 +32,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='sesja',
             name='zbiorKolorow',
-            field=models.ForeignKey(default=colorSetPk(), on_delete=django.db.models.deletion.PROTECT, to='mainServer.ZbiorKolorow'),
+            field=models.ForeignKey(default=colorSetPk, on_delete=django.db.models.deletion.PROTECT, to='mainServer.ZbiorKolorow'),
         ),
 
     ]

@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='sesja',
             name='zbiorKolorow',
-            field=models.ForeignKey(blank=True, default=colorSetPk(), null=True, on_delete=django.db.models.deletion.PROTECT, to='mainServer.ZbiorKolorow'),
+            field=models.ForeignKey(blank=True, default=colorSetPk, null=True, on_delete=django.db.models.deletion.PROTECT, to='mainServer.ZbiorKolorow'),
         ),
         migrations.AlterField(
             model_name='sesja',
