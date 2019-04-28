@@ -72,7 +72,8 @@ class AddMovie(JsonView):
             sciezka=sessionPath,
             folderZObrazami=imageFolder,
             folderModele=modelsFolder,
-            folderPrzetworzone=processedFolder
+            folderPrzetworzone=processedFolder,
+            zbiorKolorow_id=ZbiorKolorow.objects.get(nazwa="Domyslny zestaw").pk
         )
         session.save()
         if files:
