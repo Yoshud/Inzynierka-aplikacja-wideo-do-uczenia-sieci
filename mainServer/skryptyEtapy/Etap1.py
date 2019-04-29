@@ -6,7 +6,7 @@ import cv2
 import datetime
 from mainServer.models import *
 from django.utils import timezone
-import json
+import re
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -113,7 +113,37 @@ class AddMovie(JsonView):
         for status in statuses:
             film.status.add(status)
 
+    @staticmethod
+    def _getSufixNumberFromFilename(fileName):
+        match = re.search(r"([0-9]+)\.(png)|(jpg)$", fileName)
+        if not match:
+            raise Http404
+        return int(match[1])
+
+    def _groupImagesInMovies(self, imageFileNames):
+        imageFileNames.sort(key=self._getSufixNumberFromFilename)
+
+        movies = []
+        movies.append([imageFileNames[0]])
+        number = self._getSufixNumberFromFilename(imageFileNames[0])
+        for fileName in imageFileNames[1:]:
+            nextImgNum = self._getSufixNumberFromFilename(fileName)
+
+            if nextImgNum == number + 1:
+                movies[-1].append(fileName)
+            else:
+                movies.append([fileName])
+
+            number = nextImgNum
+
+        return movies
+
+    def addMoviesFromImages(self, imageFileNames):
+        return self._groupImagesInMovies(imageFileNames)
+
     def addFolder(self, sessionPK, path):
         folders, files = foldersAndMovieFilesFromPath(path)
         for file in files:
             self.addMovie(sessionPK, os.path.join(path, file))
+
+        self.addMoviesFromImages(imagesFileNamesFromPath(path))

@@ -41,6 +41,11 @@ def filterFilms(files):
     return list(filter(lambda file: any([sufix in file for sufix in filmSufixes]), files))
 
 
+def filterImages(files):
+    imageSufixes = [".jpg", ".png"]
+    return list(filter(lambda file: any([sufix in file for sufix in imageSufixes]), files))
+
+
 def validateReturnForPath(folders):
     if folders == None:
         raise Http404
@@ -51,6 +56,13 @@ def foldersAndMovieFilesFromPath(path):
     validateReturnForPath(foldernames)
     filenames = filterFilms(filenames)
     return foldernames, filenames
+
+
+def imagesFileNamesFromPath(path):
+    _, foldernames, filenames = next(walk(path), (None, None, []))
+    validateReturnForPath(foldernames)
+    filenames = filterImages(filenames)
+    return filenames
 
 
 def pathUp(path):
