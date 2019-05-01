@@ -7,6 +7,7 @@ import datetime
 from mainServer.models import *
 from django.utils import timezone
 import re
+import shutil
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -107,7 +108,7 @@ class AddMovie(JsonView):
             rozmiarX=int(x),
             rozmiarY=int(y),
             dlugosc=str(dlugosc),
-            sesja=Sesja.objects.get(pk=sessionPK),
+            sesja_id=sessionPK,
         )
         film.save()
         for status in statuses:
@@ -138,12 +139,42 @@ class AddMovie(JsonView):
 
         return movies
 
-    def addMoviesFromImages(self, imageFileNames):
-        return self._groupImagesInMovies(imageFileNames)
+    @classmethod
+    def _addMovieFromImageGroup(cls, images: list, mainPath: str, sessionPK: int) -> None:
+        firstImage = cv2.imread(os.path.join(mainPath, images[0]))
+        y, x, z = firstImage.shape
+        session = Sesja.objects.get(pk=sessionPK)
+        pathToSaveImages = session.folderZObrazami.getPath()
+        movieName = os.path.basename(mainPath)
+
+        createDirPath(pathToSaveImages)
+        movie = Film.objects.create(
+            sciezka=mainPath,
+            nazwa=movieName,
+            iloscKlatek=len(images),
+            rozmiarX=x,
+            rozmiarY=y,
+            sesja_id=sessionPK,
+        )
+
+        for i, imageName in enumerate(images):
+            newImageName = f"{movieName}_{imageName}"
+            shutil.copyfile(os.path.join(mainPath, imageName), os.path.join(pathToSaveImages, newImageName))
+            Klatka.objects.create(nazwa=newImageName, nr=i, film=movie)
+
+        statusTags = ["Przetworzono", "Aktywny"]
+        statuses = [StatusFilmu.objects.get(status=tag) for tag in statusTags]
+        for status in statuses:
+            movie.status.add(status)
+
+    def addMoviesFromImages(self, imageFileNames, mainPath, sessionPK):
+        imagesGroups = self._groupImagesInMovies(imageFileNames)
+        for imagesGroup in imagesGroups:
+            self._addMovieFromImageGroup(imagesGroup, mainPath, sessionPK)
 
     def addFolder(self, sessionPK, path):
         folders, files = foldersAndMovieFilesFromPath(path)
         for file in files:
             self.addMovie(sessionPK, os.path.join(path, file))
 
-        self.addMoviesFromImages(imagesFileNamesFromPath(path))
+        self.addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)

@@ -7,6 +7,7 @@ from os import walk
 from django.http import Http404
 from django.views.generic import View
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 imagesFolderName = "Obrazy"
 modelsFolderName = "Modele"
@@ -62,7 +63,7 @@ def imagesFileNamesFromPath(path):
     _, foldernames, filenames = next(walk(path), (None, None, []))
     validateReturnForPath(foldernames)
     filenames = filterImages(filenames)
-    return filenames
+    return filenames, path
 
 
 def pathUp(path):
@@ -71,6 +72,11 @@ def pathUp(path):
 
 def currentPath():
     return os.getcwd()
+
+
+def createDirPath(path):
+    pathToCreate = Path(path)
+    pathToCreate.mkdir(parents=True, exist_ok=True)
 
 
 def getMultipleMovieStatuses(statuses):
