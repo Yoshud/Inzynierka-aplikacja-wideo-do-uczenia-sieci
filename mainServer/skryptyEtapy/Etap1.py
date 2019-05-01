@@ -6,7 +6,8 @@ import cv2
 import datetime
 from mainServer.models import *
 from django.utils import timezone
-import json
+import re
+import shutil
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -107,13 +108,73 @@ class AddMovie(JsonView):
             rozmiarX=int(x),
             rozmiarY=int(y),
             dlugosc=str(dlugosc),
-            sesja=Sesja.objects.get(pk=sessionPK),
+            sesja_id=sessionPK,
         )
         film.save()
         for status in statuses:
             film.status.add(status)
 
+    @staticmethod
+    def _getSufixNumberFromFilename(fileName):
+        match = re.search(r"([0-9]+)\.(png)|(jpg)$", fileName)
+        if not match:
+            raise Http404
+        return int(match[1])
+
+    def _groupImagesInMovies(self, imageFileNames):
+        imageFileNames.sort(key=self._getSufixNumberFromFilename)
+
+        movies = []
+        movies.append([imageFileNames[0]])
+        number = self._getSufixNumberFromFilename(imageFileNames[0])
+        for fileName in imageFileNames[1:]:
+            nextImgNum = self._getSufixNumberFromFilename(fileName)
+
+            if nextImgNum == number + 1:
+                movies[-1].append(fileName)
+            else:
+                movies.append([fileName])
+
+            number = nextImgNum
+
+        return movies
+
+    @classmethod
+    def _addMovieFromImageGroup(cls, images: list, mainPath: str, sessionPK: int) -> None:
+        firstImage = cv2.imread(os.path.join(mainPath, images[0]))
+        y, x, z = firstImage.shape
+        session = Sesja.objects.get(pk=sessionPK)
+        pathToSaveImages = session.folderZObrazami.getPath()
+        movieName = os.path.basename(mainPath)
+
+        createDirPath(pathToSaveImages)
+        movie = Film.objects.create(
+            sciezka=mainPath,
+            nazwa=movieName,
+            iloscKlatek=len(images),
+            rozmiarX=x,
+            rozmiarY=y,
+            sesja_id=sessionPK,
+        )
+
+        for i, imageName in enumerate(images):
+            newImageName = f"{movieName}_{imageName}"
+            shutil.copyfile(os.path.join(mainPath, imageName), os.path.join(pathToSaveImages, newImageName))
+            Klatka.objects.create(nazwa=newImageName, nr=i, film=movie)
+
+        statusTags = ["Przetworzono", "Aktywny"]
+        statuses = [StatusFilmu.objects.get(status=tag) for tag in statusTags]
+        for status in statuses:
+            movie.status.add(status)
+
+    def addMoviesFromImages(self, imageFileNames, mainPath, sessionPK):
+        imagesGroups = self._groupImagesInMovies(imageFileNames)
+        for imagesGroup in imagesGroups:
+            self._addMovieFromImageGroup(imagesGroup, mainPath, sessionPK)
+
     def addFolder(self, sessionPK, path):
         folders, files = foldersAndMovieFilesFromPath(path)
         for file in files:
             self.addMovie(sessionPK, os.path.join(path, file))
+
+        self.addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)

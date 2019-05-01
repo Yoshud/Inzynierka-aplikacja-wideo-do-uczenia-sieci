@@ -91,7 +91,7 @@ class FolderZObrazami(models.Model):
     sciezka = models.TextField(default="", blank=True, null=True)
     nazwa = models.TextField(default="", blank=True, null=True)
 
-    def getPath(self):
+    def getPath(self) -> str:
         if self.sciezka:
             return self.sciezka
         elif self.nazwa:

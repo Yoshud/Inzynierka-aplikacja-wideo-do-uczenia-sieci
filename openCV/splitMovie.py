@@ -37,7 +37,7 @@ def waitForMovies(data):
 def processMovies(data):
     for movie in data:
         print (movie["id"])
-        frameInfo = process(path=movie["path"], pathToSave=movie["pathToSave"], movieName=movie["movieName"] , movieId=movie["id"])
+        frameInfo = process(path=movie["path"], pathToSave=movie["pathToSave"], movieName=movie["movieName"], movieId=movie["id"])
         sendingRequest(movie["id"], frameInfo)
     return waitForMovies, None
 
