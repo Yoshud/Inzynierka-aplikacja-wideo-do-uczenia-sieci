@@ -110,7 +110,7 @@ class RandomCropFunctor:
     def __init__(self, expectedSize):
         self.expectedSize = expectedSize
 
-    def cropMethodToReduce(self, augmentationCode, imgsDict):
+    def __call__(self, augmentationCode, imgsDict):
         retImgsDict = []
         for imgDict in imgsDict:
             img = imgDict["img"]
@@ -133,7 +133,7 @@ class RandomCropFunctor:
 # def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
 def process(path, pointPosition, augmentationCode, expectedSize):
     img = cv2.imread(path.replace('\\', '/'))
-    functions = [flipVerticalToReduce, flipHorizontalToReduce, RandomCropFunctor(expectedSize).cropMethodToReduce]
+    functions = [flipVerticalToReduce, flipHorizontalToReduce, RandomCropFunctor(expectedSize)]
     imgsDict = [{
         "img": img,
         "position": pointPosition,
@@ -141,5 +141,7 @@ def process(path, pointPosition, augmentationCode, expectedSize):
     }, ]
     augmentationCodeStr = str(augmentationCode)[1:]
     functionsWithCode = list(zip(functions, augmentationCodeStr))
-    imgs = reduce(lambda imgsDict, funCode: funCode[0](int(funCode[1]), imgsDict), functionsWithCode, imgsDict)
+    imgs = reduce(lambda imgsDict, funCode: funCode[0](int(funCode[1]), imgsDict),
+                  functionsWithCode,
+                  imgsDict)
     return imgs
