@@ -13,18 +13,9 @@ def saveFile(path, fileName, methodTag, img, imgSufix="jpg"):
 
 def flipPointPosition(position, imgShape, flipType):
     retPosition = list(position)
-    positionIt = (flipType + 1) % 2  # 1 jeśli 0, 0 jeśli 1
+    positionIt = (flipType + 1) % 2
     retPosition[positionIt] = imgShape[flipType] - retPosition[positionIt]
     return retPosition
-
-
-def cropAndResizeNewPointPosition(pointPosition, cropPosition, imgShape, expectedSize, cropScale=0.8):
-    expectedSize = np.array(expectedSize)
-    imgHeight = imgShape[0]
-    positionTowardCropCenter = -(cropPosition - pointPosition)
-    positionTowardCropCenterAfterResize = expectedSize[0] / (cropScale * imgHeight) * positionTowardCropCenter
-    positionTowardLeftTopCorner = expectedSize / 2 + positionTowardCropCenterAfterResize
-    return positionTowardLeftTopCorner
 
 
 def flipHorizontal(img, position):
@@ -54,48 +45,28 @@ def resize(img, size=(0, 0), scale=0):
     return img
 
 
-def cropWithResize(img, expectedSize, cropHeight, cropWidth, x0=-1, y0=-1):
-    croped = crop(img, cropHeight, cropWidth, x0=x0, y0=y0)
-    return resize(croped, size=expectedSize)
-
-
-def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
-    cropScale = 0.8
+def randomCrop(img, pointPosition, numberOfCrops):
     imgHeight = img.shape[0]
-    if numberOfCrops == 1:
-        cropPositions = [cropPositionZero(img.shape, pointPosition, toBorderHeightFactor=0.0).astype(int), ]
-    else:
-        cropPositions = [randomCropPosition(img.shape, pointPosition) for it in range(numberOfCrops)]
-    newPointPositions = [cropAndResizeNewPointPosition(pointPosition, cropPosition, img.shape, expectedSize)
-                         for cropPosition in cropPositions]
-    cropWithResizeArgs = img, expectedSize, cropScale * imgHeight, cropScale * imgHeight
-    imgs = [cropWithResize(*cropWithResizeArgs, *cropPosition) for cropPosition in cropPositions]
-    return imgs, newPointPositions, cropPositions
+    cropPositions, pointPositions = zip(*[randomCropPosition(img.shape, pointPosition) for it in range(numberOfCrops)])
 
-
-def process2(paths, pathToSave, fileNames):
-    pathToCreate = Path(pathToSave)
-    pathToCreate.mkdir(parents=True, exist_ok=True)
-    frameInfo = []
+    cropArgs = img, imgHeight, imgHeight
+    imgs = [crop(*cropArgs, *cropPosition) for cropPosition in cropPositions]
+    return imgs, pointPositions, cropPositions
 
 
 def flipToReduce(flipMethod, methodCode, augmentationCode, imgsDict):
     if augmentationCode:
-        img = imgsDict[0]["img"]
+        orginalImg = imgsDict[0]["img"]
         position = imgsDict[0]["position"]
-        retImg, retPosition = flipMethod(img, position)
+
+        retImg, retPosition = flipMethod(orginalImg, position)
         imgsDict.append({
             "img": retImg,
             "position": retPosition,
             "methodCode": methodCode,
         })
-        return imgsDict
-    else:
-        return imgsDict
 
-
-def resizeScale(imgHeight, expectedSize, cropScale=0.8):
-    return (imgHeight * cropScale) / expectedSize[0]
+    return imgsDict
 
 
 def flipVerticalToReduce(augmentationCode, imgsDict):
@@ -107,33 +78,28 @@ def flipHorizontalToReduce(augmentationCode, imgsDict):
 
 
 class RandomCropFunctor:
-    def __init__(self, expectedSize):
-        self.expectedSize = expectedSize
-
     def __call__(self, augmentationCode, imgsDict):
         retImgsDict = []
         for imgDict in imgsDict:
             img = imgDict["img"]
             position = imgDict["position"]
             methodCode = imgDict["methodCode"]
-            retImgs, retPositions, retCropPositions, = randomCrop(img, self.expectedSize, position, augmentationCode)
-            retResizeScale = resizeScale(img.shape[0], self.expectedSize)
+            retImgs, retPositions, retCropPositions, = randomCrop(img, position, augmentationCode)
             for retImg, retPosition, retCropPosition in zip(retImgs, retPositions, retCropPositions):
                 retImgsDict.append({
                     "img": retImg,
                     "position": retPosition,
                     "methodCode": "{}_{}_{}_{}".format(methodCode, "crop", retCropPosition[0], retCropPosition[0]),
                     "orginalMethodCode": methodCode,
-                    "resizeScale": retResizeScale,
+                    "resizeScale": 1,
                     "cropPosition": retCropPosition
                 })
         return retImgsDict
 
 
-# def randomCrop(img, expectedSize, pointPosition, numberOfCrops):
-def process(path, pointPosition, augmentationCode, expectedSize):
+def process(path, pointPosition, augmentationCode):
     img = cv2.imread(path.replace('\\', '/'))
-    functions = [flipVerticalToReduce, flipHorizontalToReduce, RandomCropFunctor(expectedSize)]
+    functions = [flipVerticalToReduce, flipHorizontalToReduce, RandomCropFunctor()]
     imgsDict = [{
         "img": img,
         "position": pointPosition,

@@ -1,6 +1,7 @@
 from openCV.dataAugmentationFunctions import process
 import cv2
 import copy
+import numpy as np
 
 test_data = {
     "framePath": "/home/adam/repos/Inzynierka/Sesje/testDodawania_2019-05-01_22_33_46_856457/Obrazy/recording_2019-04-25 22:41:26.783159_frame_2230.png",
@@ -36,12 +37,12 @@ def process_order(data):
         cv2.imshow("test", callback.img)
         cv2.setMouseCallback("test", callback)
 
-    imgs = process(path, callback.position, data["augmentationCode"], data["expectedSize"])
+    imgs = process(path, callback.position, data["augmentationCode"])
     for imgDict in imgs:
         while not cv2.waitKey(10) & 0xFF == ord('w'):
             img = imgDict["img"]
-            position = int(round(imgDict["position"][0])), int(round(imgDict["position"][1]))
-            cv2.drawMarker(img, position, (0, 0, 255))
+            position = (np.array(imgDict["position"]) * img.shape[0:1]).astype(int)
+            cv2.drawMarker(img, tuple(position), (0, 0, 255))
             cv2.imshow("test", img)
 
 

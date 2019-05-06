@@ -63,7 +63,7 @@ def processOrders(data):
         colorId = order["colorId"]
         fileName, fileSufix = fileNameAndSufixFromPath(path)
 
-        imgs = process(path, order["pointPosition"], order["augmentationCode"], order["expectedSize"])
+        imgs = process(path, order["pointPosition"], order["augmentationCode"])
         for imgDict in imgs:
             imgName = "{}_{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), color, fileSufix)
             fullPathToSave = os.path.join(pathToSave, imgName).replace('\\', '/')
