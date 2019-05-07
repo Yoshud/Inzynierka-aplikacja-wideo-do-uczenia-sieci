@@ -3,7 +3,6 @@ from keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
 from ModelML.dataBatchKeras import Data_picker
 from math import ceil, floor
 from keras.utils import plot_model
-from keras.models import load_model
 
 from ModelML.lossMethod import Norm2Loss
 
@@ -36,6 +35,15 @@ class Model:
 
     def fit(self, *args, **kwargs):
         return self.model.fit(*args, **kwargs)
+
+    def save(self, fileName, epoch=None):
+        if epoch:
+            fileName = f"{fileName}_epoch{epoch}"
+
+        model_json = self.model.to_json()
+        with open(f"{fileName}.json", "w") as json_file:
+            json_file.write(model_json)
+        self.model.save_weights(f"{fileName}.h5")
 
     def _add_conv_layer(self, conv_network_dict: dict, max_pool: int = None, input_shape: list = None):
         if 'window' in conv_network_dict:
@@ -116,7 +124,7 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
         metrics=['mse', Norm2Loss().get],
     )
 
-    # plot_model(model, to_file='model.png')
+    plot_model(model, to_file=f'{model_file}.png')
 
     number_of_epoch = max(1, ceil(training_iters / epoch_size))
     epochs_to_save = max(1, floor(save_step / epoch_size))
@@ -135,10 +143,9 @@ def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout
         )
 
         if not epoch % epochs_to_save:
-            model.model.save(f"{model_file}_epoch{epoch}.h5")
-
-        model.model.save(f"{model_file}.h5")
-
+            model.save(model_file, epoch)
         train_history
+
+    model.save(model_file)
 
     ##TODO: add testing model
