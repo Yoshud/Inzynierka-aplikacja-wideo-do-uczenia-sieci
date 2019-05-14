@@ -111,3 +111,11 @@ def process(path, pointPosition, augmentationCode):
                   functionsWithCode,
                   imgsDict)
     return imgs
+
+#TODO: przerobić do działania z wieloma punktami na raz oraz z punktem typu None, zmodyfikować wtedy wstęp tak by sprawdzał braki punktu i dawał w sposób odpowiedni
+# zmodyfikować tak by pozycji było podawane jako JSON ( kolor: kolor, pozycja: pozycja (brak pozycji gdy Brak punktu )
+# zmodyfikować machineLearning dodając kolejną funkcje jako oddzielny skrypt która tłumaczy te punkty na odpowiednie modele
+# funkcje te zrobić jako klasę którą się pickluje i dodać by zapisywało się wszystko w jakimś folderze tab by tą klasę się odpicklowywało
+# dawalo load i by mozna już jej uzywać z jakims predict
+# nastepnie wytrenowac model i zrobić pokaz
+# potem mozna bedzie dodawac kolejne modele poprzez odpowiednie ich tworzenie tak by ten interfejs utrzymywaly
