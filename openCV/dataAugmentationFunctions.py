@@ -12,22 +12,25 @@ def saveFile(path, fileName, methodTag, img, imgSufix="jpg"):
 
 
 def flipPointPosition(position, imgShape, flipType):
-    retPosition = list(position)
-    positionIt = (flipType + 1) % 2
-    retPosition[positionIt] = imgShape[flipType] - retPosition[positionIt]
-    return retPosition
+    if position is not None:
+        retPosition = list(position)
+        positionIt = (flipType + 1) % 2
+        retPosition[positionIt] = imgShape[flipType] - retPosition[positionIt]
+        return retPosition
+    else:
+        return None
 
 
 def flipHorizontal(img, positions):
     flipped = cv2.flip(img, 1)
-    newPositions = [flipPointPosition(position, img.shape, 1) for position in positions]
-    return flipped, newPositions
+    newPositions = [flipPointPosition(position, img.shape, 1) for position in positions.values()]
+    return flipped, dict(zip(positions.keys(), newPositions))
 
 
 def flipVertical(img, positions):
     flipped = cv2.flip(img, 0)
-    newPositions = [flipPointPosition(position, img.shape, 0) for position in positions]
-    return flipped, newPositions
+    newPositions = [flipPointPosition(position, img.shape, 0) for position in positions.values()]
+    return flipped, dict(zip(positions.keys(), newPositions))
 
 
 def crop(img, height, width, x0=-1, y0=-1):
@@ -86,11 +89,11 @@ class RandomCropFunctor:
             img = imgDict["img"]
             positions = imgDict["positions"]
             methodCode = imgDict["methodCode"]
-            retImgs, retPositionss, retCropPositions, = randomCrop(img, positions, augmentationCode)
+            retImgs, retPositionss, retCropPositions, = randomCrop(img, positions.values(), augmentationCode)
             for retImg, retPositions, retCropPosition in zip(retImgs, retPositionss, retCropPositions):
                 retImgsDict.append({
                     "img": retImg,
-                    "positions": retPositions,
+                    "positions": dict(zip(positions.keys(), retPositions)),
                     "methodCode": "{}_{}_{}_{}".format(methodCode, "crop", retCropPosition[0], retCropPosition[0]),
                     "orginalMethodCode": methodCode,
                     "resizeScale": 1,
@@ -115,7 +118,7 @@ def process(path, pointPositions, augmentationCode):
     return imgs
 
 #TODO: przerobić do działania z wieloma punktami na raz oraz z punktem typu None, zmodyfikować wtedy wstęp tak by sprawdzał braki punktu i dawał w sposób odpowiedni
-# zmodyfikować tak by pozycji było podawane jako JSON ( kolor: kolor, pozycja: pozycja (brak pozycji gdy Brak punktu )
+# zmodyfikować tak by pozycji było podawane jako JSON ( kolor: kolor, pozycja: pozycja (brak pozycji gdy Brak punktu ) DONE
 # zmodyfikować machineLearning dodając kolejną funkcje jako oddzielny skrypt która tłumaczy te punkty na odpowiednie modele
 # funkcje te zrobić jako klasę którą się pickluje i dodać by zapisywało się wszystko w jakimś folderze tab by tą klasę się odpicklowywało
 # dawalo load i by mozna już jej uzywać z jakims predict

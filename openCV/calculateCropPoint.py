@@ -15,13 +15,20 @@ def randomDeltaFromPosition0(imgShape, moveHeightFactor):
     return deltaRand.astype(int)
 
 
+def newPointPosition(pointPosition, imgHeight, cropPosition):
+    return imageCenter([imgHeight, imgHeight]) - (cropPosition - pointPosition) if pointPosition is not None else None
+
+
+def normalizePointPosition(pointPosition, imgHeight):
+    return pointPosition / imgHeight if pointPosition is not None else None
+
+
 def randomCropPosition(imgShape, pointPositions, moveHeightFactor=0.1):
     imgHeight = imgShape[0]
     randomDelta = randomDeltaFromPosition0(imgShape, moveHeightFactor)
     cropPosition = imageCenter(imgShape) + randomDelta
 
-    # newPointPosition = imageCenter([imgHeight, imgHeight]) - (cropPosition - pointPosition)
-    newPointPositions = [imageCenter([imgHeight, imgHeight]) - (cropPosition - pointPosition) for pointPosition in pointPositions]
-    normalizedNewPointPositions = [pointPosition / imgHeight for pointPosition in newPointPositions]
+    newPointPositions = [newPointPosition(position, imgHeight, cropPosition) for position in pointPositions]
+    normalizedNewPointPositions = [normalizePointPosition(position, imgHeight) for position in newPointPositions]
 
     return cropPosition, normalizedNewPointPositions
