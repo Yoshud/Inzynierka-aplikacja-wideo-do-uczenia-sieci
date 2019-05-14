@@ -3,12 +3,11 @@ graphviz
 django
 tensorboard==1.11.0
 tensorflow==1.11.0
-numpy==1.14.5
+numpy==1.15.0
 opencv-python
 requests
 scipy
 django-cors-headers==2.4.0
-psycopg2
 Pillow
 gphoto2==1.8.5
 Keras==2.2.4

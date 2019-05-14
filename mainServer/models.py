@@ -47,7 +47,7 @@ class PozycjaPunktu(Punkt):
     kolor = models.ForeignKey("Kolor", related_name="pozycja", on_delete=models.CASCADE, blank=True, null=True)
 
 
-class PozycjaPunktuPoCrop(Punkt):
+class PozycjaPunktuPoCrop(Punkt): #TODO: change to save JSON
     obraz = models.ForeignKey("ObrazPoDostosowaniu", related_name="pozycja", on_delete=models.CASCADE)
     status = models.ForeignKey("StatusPozycjiCrop", related_name="pozycja", on_delete=models.CASCADE, blank=True,
                                null=True)

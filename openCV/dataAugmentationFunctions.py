@@ -18,14 +18,16 @@ def flipPointPosition(position, imgShape, flipType):
     return retPosition
 
 
-def flipHorizontal(img, position):
+def flipHorizontal(img, positions):
     flipped = cv2.flip(img, 1)
-    return flipped, flipPointPosition(position, img.shape, 1)
+    newPositions = [flipPointPosition(position, img.shape, 1) for position in positions]
+    return flipped, newPositions
 
 
-def flipVertical(img, position):
+def flipVertical(img, positions):
     flipped = cv2.flip(img, 0)
-    return flipped, flipPointPosition(position, img.shape, 0)
+    newPositions = [flipPointPosition(position, img.shape, 0) for position in positions]
+    return flipped, newPositions
 
 
 def crop(img, height, width, x0=-1, y0=-1):
@@ -57,12 +59,12 @@ def randomCrop(img, pointPosition, numberOfCrops):
 def flipToReduce(flipMethod, methodCode, augmentationCode, imgsDict):
     if augmentationCode:
         orginalImg = imgsDict[0]["img"]
-        position = imgsDict[0]["position"]
+        positions = imgsDict[0]["positions"]
 
-        retImg, retPosition = flipMethod(orginalImg, position)
+        retImg, retPositions = flipMethod(orginalImg, positions)
         imgsDict.append({
             "img": retImg,
-            "position": retPosition,
+            "positions": retPositions,
             "methodCode": methodCode,
         })
 
@@ -82,13 +84,13 @@ class RandomCropFunctor:
         retImgsDict = []
         for imgDict in imgsDict:
             img = imgDict["img"]
-            position = imgDict["position"]
+            positions = imgDict["positions"]
             methodCode = imgDict["methodCode"]
-            retImgs, retPositions, retCropPositions, = randomCrop(img, position, augmentationCode)
-            for retImg, retPosition, retCropPosition in zip(retImgs, retPositions, retCropPositions):
+            retImgs, retPositionss, retCropPositions, = randomCrop(img, positions, augmentationCode)
+            for retImg, retPositions, retCropPosition in zip(retImgs, retPositionss, retCropPositions):
                 retImgsDict.append({
                     "img": retImg,
-                    "position": retPosition,
+                    "positions": retPositions,
                     "methodCode": "{}_{}_{}_{}".format(methodCode, "crop", retCropPosition[0], retCropPosition[0]),
                     "orginalMethodCode": methodCode,
                     "resizeScale": 1,
@@ -97,12 +99,12 @@ class RandomCropFunctor:
         return retImgsDict
 
 
-def process(path, pointPosition, augmentationCode):
+def process(path, pointPositions, augmentationCode):
     img = cv2.imread(path.replace('\\', '/'))
     functions = [flipVerticalToReduce, flipHorizontalToReduce, RandomCropFunctor()]
     imgsDict = [{
         "img": img,
-        "position": pointPosition,
+        "positions": pointPositions,
         "methodCode": "O",
     }, ]
     augmentationCodeStr = str(augmentationCode)[1:]

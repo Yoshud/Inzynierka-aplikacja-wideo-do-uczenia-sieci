@@ -28,21 +28,29 @@ class CallbackFunctor:
             self.isCalled = True
 
 
-def process_order(data):
-    path = data["framePath"]
-    img = cv2.imread(path)
-
+def addPoint(img):
     callback = CallbackFunctor(img)
     while not cv2.waitKey(10) & callback.isCalled:
         cv2.imshow("test", callback.img)
         cv2.setMouseCallback("test", callback)
+    return callback.position
 
-    imgs = process(path, callback.position, data["augmentationCode"])
+
+def process_order(data):
+    path = data["framePath"]
+    img = cv2.imread(path)
+
+    positions = [addPoint(img) for _ in range(2)]
+
+    imgs = process(path, positions, data["augmentationCode"])
     for imgDict in imgs:
         while not cv2.waitKey(10) & 0xFF == ord('w'):
             img = imgDict["img"]
-            position = (np.array(imgDict["position"]) * img.shape[0:1]).astype(int)
-            cv2.drawMarker(img, tuple(position), (0, 0, 255))
+            positions = (np.array(imgDict["positions"]) * img.shape[0:1]).astype(int)
+
+            for position in positions:
+                cv2.drawMarker(img, tuple(position), (0, 0, 255))
+
             cv2.imshow("test", img)
 
 
