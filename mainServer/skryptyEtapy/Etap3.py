@@ -13,10 +13,10 @@ from ModelML.lossMethod import *
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których nie ma obiektu
+class DataAugmentationOrder(View):
     def get(self, request, **kwargs):
         orders = ZlecenieAugmentacji.objects.filter(wTrakcie=False).order_by("pk")[0:20]
-        ordersDict = flatten([self.orderToDictsList(order) for order in orders])
+        ordersDict = [self.orderToDict(order) for order in orders]
         return JsonResponse({
             "orders": ordersDict,
         })
@@ -30,9 +30,6 @@ class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których ni
         isFlipHorizontal = 1 if data["isFlipHorizontal"] else 0
         numberOfRandomCrops = int(data["numberOfRandomCrops"])
 
-        networkId = data["networkId"]
-        network = Sieci.objects.get(pk=networkId)
-        expectedSize = {"x": network.inputSizeX, "y": network.inputSizeY}
 
         if numberOfRandomCrops > 10:
             numberOfRandomCrops = 9
@@ -52,32 +49,29 @@ class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których ni
         frames = flatten([self.getMovieFrames(movieId) for movieId in moviesId])
 
         for frame in frames:
-            self.addOrder(frame, dataAugmentationCode, dataAugmentationFolder, expectedSize)
+            self.addOrder(frame, dataAugmentationCode, dataAugmentationFolder)
 
         return JsonResponse({"folderPath": dataAugmentationFolder.getPath()})
 
-    def orderToDictsList(self, dataAugmenationOrder):
-        positionObjects = self.getInterpolatedPositionsOr404(dataAugmenationOrder.klatka)
-        orderDicts = []
-        for positionObject in positionObjects:
-            position = (positionObject.x, positionObject.y)
-            expectedSize = (dataAugmenationOrder.oczekiwanyRozmiarX, dataAugmenationOrder.oczekiwanyRozmiarY)
-            orderDict = {
-                "frameId": dataAugmenationOrder.klatka.pk,
-                "augmentationCode": dataAugmenationOrder.kodAugmentacji,
-                "framePath": dataAugmenationOrder.klatka.getPath(),
-                "pathToSave": dataAugmenationOrder.folder.getPath(),
-                "pointPosition": position,
-                "expectedSize": expectedSize,
-                "orderId": dataAugmenationOrder.pk,
-                "colorId": positionObject.kolor.pk if positionObject.kolor else None,
-                "colorName": positionObject.kolor.nazwa if positionObject.kolor else None,
-            }
-            dataAugmenationOrder.wTrakcie = True
-            dataAugmenationOrder.save()
-            orderDicts.append(orderDict)
+    def orderToDict(self, dataAugmenationOrder):
+        positionObjects = self.getInterpolatedAndNoObjectPositionsOr404(dataAugmenationOrder.klatka)
+        positions = {
+            positionObject.kolor.nazwa: positionObject.getPosition()
+            for positionObject in positionObjects
+        }
 
-        return orderDicts
+        orderDict = {
+            "frameId": dataAugmenationOrder.klatka.pk,
+            "augmentationCode": dataAugmenationOrder.kodAugmentacji,
+            "framePath": dataAugmenationOrder.klatka.getPath(),
+            "pathToSave": dataAugmenationOrder.folder.getPath(),
+            "pointPositions": positions,
+            "orderId": dataAugmenationOrder.pk,
+        }
+        dataAugmenationOrder.wTrakcie = True
+        dataAugmenationOrder.save()
+
+        return orderDict
 
     def getMovieFrames(self, movieId):
         frames = Klatka.objects.filter(
@@ -86,9 +80,9 @@ class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których ni
         ).distinct()
         return frames
 
-    def addOrder(self, frame, dataAugmentationCode, dataAugmentationFolder, expectedSize):
+    def addOrder(self, frame, dataAugmentationCode, dataAugmentationFolder):
         augmentationOrderCountForFrame = ZlecenieAugmentacji.objects \
-            .filter(klatka=frame, oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]) \
+            .filter(klatka=frame) \
             .count()
         noAugmentationOrderForFrame = (augmentationOrderCountForFrame == 0)
 
@@ -98,14 +92,13 @@ class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których ni
                 klatka=frame,
                 kodAugmentacji=dataAugmentationCode,
                 folder=dataAugmentationFolder,
-                oczekiwanyRozmiarX=expectedSize["x"], oczekiwanyRozmiarY=expectedSize["y"]
             )
 
-    def getInterpolatedPositionsOr404(self, frame):
+    def getInterpolatedAndNoObjectPositionsOr404(self, frame):
         try:
             return PozycjaPunktu.objects.filter(
                 klatka=frame,
-                status__status__in=[interpolatedPositonStatus]
+                status__status__in=[interpolatedPositonStatus, noObjectPositionStatus]
             )
         except ObjectDoesNotExist:
             return Http404
@@ -117,38 +110,31 @@ class DataAugmentationOrder(View): #TODO: zrobić coś z punktami na których ni
 class ImageAfterDataAugmentation(JsonView):
     def post_method(self):
 
-        pointPosition = self._get_data_or_error("pointPosition")
+        pointPositions = self._get_data_or_error("pointPositions")
         cropPosition = self._get_data_or_error("cropPosition")
-        resizeScale = self._get_data_or_error("resizeScale")
         frameId = self._get_data_or_error("frameId")
         imageName = self._get_data_or_error("imageName")
         methodCode = self._get_data_or_error("methodCode")
         orderId = self._get_data_or_error("orderId")
-        colorId = self._get_data_or_error("colorId")
 
-        self.addImage(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId)
+        self.addImage(pointPositions, cropPosition, frameId, imageName, methodCode, orderId)
         return JsonResponse({"ok": True})
 
     def get_method(self):
         pass
 
-    def addImage(self, pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId):
-        status = StatusPozycjiCrop.objects.get(status="punktOrginalny") #TODO: dodać więcej statusów crop xD
+    def addImage(self, pointPositions, cropPosition, frameId, imageName, methodCode, orderId):
         cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
         image = ObrazPoDostosowaniu.objects.create(
             pozycjaCropa=cropPositionObject,
-            wspResize=resizeScale,
             klatkaMacierzysta_id=frameId,
             nazwa=imageName,
             metoda=methodCode,
             zlecenie_id=orderId,
-            kolor_id=colorId,
         )
 
         PozycjaPunktuPoCrop.objects.create(
-            obraz=image, status=status,
-            x=int(float(pointPosition[0])), y=int(float(pointPosition[1])),
-            kolor_id=colorId,
+            obraz=image, json=pointPositions
         )
 
 

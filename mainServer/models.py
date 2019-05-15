@@ -8,6 +8,9 @@ class Status(models.Model):
     class Meta:
         abstract = True
 
+    def __str__(self):
+        return self.status
+
 
 class StatusFilmu(Status):
     pass
@@ -25,6 +28,9 @@ class Kolor(models.Model):
     nazwa = models.CharField("nazwa", max_length=100, null=True, blank=True, unique=True)
     kod = models.CharField("kod", max_length=100, null=True, blank=True)
 
+    def __str__(self):
+        return self.nazwa
+
 
 class ZbiorKolorow(models.Model):
     nazwa = models.CharField("nazwa", max_length=100, null=True, blank=True, unique=True)
@@ -40,6 +46,12 @@ class Punkt(models.Model):
     class Meta:
         abstract = True
 
+    def getPosition(self):
+        if self.x is not None and self.y is not None:
+            return self.x, self.y
+        else:
+            return None
+
 
 class PozycjaPunktu(Punkt):
     klatka = models.ForeignKey("Klatka", related_name="pozycja", on_delete=models.CASCADE)
@@ -47,11 +59,9 @@ class PozycjaPunktu(Punkt):
     kolor = models.ForeignKey("Kolor", related_name="pozycja", on_delete=models.CASCADE, blank=True, null=True)
 
 
-class PozycjaPunktuPoCrop(Punkt): #TODO: change to save JSON
+class PozycjaPunktuPoCrop(models.Model):
     obraz = models.ForeignKey("ObrazPoDostosowaniu", related_name="pozycja", on_delete=models.CASCADE)
-    status = models.ForeignKey("StatusPozycjiCrop", related_name="pozycja", on_delete=models.CASCADE, blank=True,
-                               null=True)
-    kolor = models.ForeignKey("Kolor", related_name="pozycjaCrop", on_delete=models.CASCADE, blank=True, null=True)
+    json = models.TextField(default="")
 
 
 class PozycjaCropa(Punkt):
@@ -148,16 +158,13 @@ class ObrazPoDostosowaniu(models.Model):
         (FLIP_H, "flipped horizontal"),
         (ORGINAL, "orginal")
     )
-    # zostaje, ale prawdopodobnie najlepiej liczyc pozycje punktu na podstawie odpowidnika przypoisanego ( delta = punktPoCrop - PoUczeniu, PunktNaKlatce = punktPierwotny - delta (+ uwzględnić metodę i resize))
     pozycjaCropa = models.OneToOneField("PozycjaCropa", related_name="obraz", on_delete=models.CASCADE)
 
-    wspResize = models.FloatField(default=1.0)
     klatkaMacierzysta = models.ForeignKey("Klatka", on_delete=models.CASCADE)
     sciezka = models.TextField(default="", blank=True, null=True)
     nazwa = models.TextField(default="", blank=True, null=True)
     metoda = models.CharField(max_length=1, choices=METHODS)
     zlecenie = models.ForeignKey("ZlecenieAugmentacji", on_delete=models.CASCADE, null=True)
-    kolor = models.ForeignKey("Kolor", on_delete=models.CASCADE, null=True)
     # PozycjaPunktuPoCrop w polu oddzielnym
 
     def getPath(self):
@@ -173,8 +180,6 @@ class ZlecenieAugmentacji(models.Model):
     klatka = models.ForeignKey("Klatka", on_delete=models.CASCADE)
     kodAugmentacji = models.IntegerField(default=114)  # po koleji: flipV(0 or 1), flipH(0 or 1), randomCrop(1-9)
     folder = models.ForeignKey("FolderZPrzygotowanymiObrazami", on_delete=models.CASCADE)
-    oczekiwanyRozmiarX = models.IntegerField("x")
-    oczekiwanyRozmiarY = models.IntegerField("y")
     wTrakcie = models.BooleanField(default=False)
     # kolor = models.ForeignKey("Kolor", related_name="zlecenie", on_delete=models.CASCADE, blank=True, null=True)
 

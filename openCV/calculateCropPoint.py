@@ -20,15 +20,16 @@ def newPointPosition(pointPosition, imgHeight, cropPosition):
 
 
 def normalizePointPosition(pointPosition, imgHeight):
-    return pointPosition / imgHeight if pointPosition is not None else None
+    return list(pointPosition / imgHeight) if pointPosition is not None else None
 
 
 def randomCropPosition(imgShape, pointPositions, moveHeightFactor=0.1):
     imgHeight = imgShape[0]
     randomDelta = randomDeltaFromPosition0(imgShape, moveHeightFactor)
     cropPosition = imageCenter(imgShape) + randomDelta
+    cropPositionInt = [int(el) for el in cropPosition]
 
     newPointPositions = [newPointPosition(position, imgHeight, cropPosition) for position in pointPositions]
     normalizedNewPointPositions = [normalizePointPosition(position, imgHeight) for position in newPointPositions]
 
-    return cropPosition, normalizedNewPointPositions
+    return cropPositionInt, normalizedNewPointPositions

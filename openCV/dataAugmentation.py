@@ -4,23 +4,21 @@ from openCV.dataAugmentationFunctions import process
 import cv2
 from pathlib import Path
 from internalConnection.InternalConnection import InternalConnection
+import json
 
 url = "http://localhost:8000/dataAugmentationOrder"
 urlResponse = "http://localhost:8000/imageAfterDataAugmentation"
 connection = InternalConnection(url, urlResponse)
 
 
-def sendingRequest(pointPosition, cropPosition, resizeScale, frameId, imageName, methodCode, orderId, colorId):
+def sendingRequest(pointPositions, cropPosition, frameId, imageName, methodCode, orderId):
     payload = {
-        "pointPosition": list(pointPosition.astype(str)),
-        "cropPosition": list(cropPosition.astype(str)),
-        "resizeScale": resizeScale,
+        "pointPositions": pointPositions,
+        "cropPosition": cropPosition,
         "frameId": frameId,
-        # "toImagePath": toImagePath,
         "imageName": imageName,
         "methodCode": methodCode,
         "orderId": orderId,
-        "colorId": colorId
     }
     return connection.sendResponse(payload)
 
@@ -59,25 +57,21 @@ def processOrders(data):
         path = order["framePath"]
         frameId = order["frameId"]
         orderId = order["orderId"]
-        color = order["colorName"]
-        colorId = order["colorId"]
         fileName, fileSufix = fileNameAndSufixFromPath(path)
 
-        imgs = process(path, order["pointPosition"], order["augmentationCode"])
+        imgs = process(path, order["pointPositions"], order["augmentationCode"])
         for imgDict in imgs:
-            imgName = "{}_{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), color, fileSufix)
+            imgName = "{}_{}_{}.{}".format(fileName, imgDict["methodCode"], id(imgs), fileSufix)
             fullPathToSave = os.path.join(pathToSave, imgName).replace('\\', '/')
 
             if cv2.imwrite(fullPathToSave, imgDict["img"], [cv2.IMWRITE_PNG_COMPRESSION, 0]):
                 sendingRequest(
                     imageName=imgName,
                     frameId=frameId,
-                    pointPosition=imgDict["position"],
+                    pointPositions=imgDict["positions"],
                     cropPosition=imgDict["cropPosition"],
-                    resizeScale=imgDict["resizeScale"],
                     methodCode=imgDict["orginalMethodCode"],
-                    orderId=orderId,
-                    colorId=colorId
+                    orderId=orderId
                 )
     return waitForOrders, None
 

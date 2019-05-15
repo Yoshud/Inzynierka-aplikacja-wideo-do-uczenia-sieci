@@ -11,7 +11,7 @@ import numpy as np
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DivideIntoSets(View):
+class DivideIntoSets(View): #TODO: zmodyfikowac do korzystania z nowej logiki
     def post(self, request, **kwargs):
         data = json.loads(request.read().decode('utf-8').replace("'", "\""))
         try:
