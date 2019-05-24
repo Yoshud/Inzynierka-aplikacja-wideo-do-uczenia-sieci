@@ -94,7 +94,7 @@ class RandomCropFunctor:
                 retImgsDict.append({
                     "img": retImg,
                     "positions": dict(zip(positions.keys(), retPositions)),
-                    "methodCode": "{}_{}_{}_{}".format(methodCode, "crop", retCropPosition[0], retCropPosition[0]),
+                    "methodCode": "{}_{}_{}_{}".format(methodCode, "crop", retCropPosition[0], retCropPosition[1]),
                     "orginalMethodCode": methodCode,
                     "cropPosition": retCropPosition
                 })

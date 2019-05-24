@@ -134,7 +134,7 @@ class ImageAfterDataAugmentation(JsonView):
         )
 
         PozycjaPunktuPoCrop.objects.create(
-            obraz=image, json=pointPositions
+            obraz=image, json=json.dumps(pointPositions)
         )
 
 
@@ -155,7 +155,7 @@ class NeuralNetworks(View):
             "y": network.inputSizeY,
             "name": "Network nr. {}".format(network.pk),
             "id": network.pk,
-            "description": network.opisXML
+            "description": network.opisJSON
         }
 
 

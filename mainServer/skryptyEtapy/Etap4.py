@@ -17,33 +17,20 @@ class DivideIntoSets(View): #TODO: zmodyfikowac do korzystania z nowej logiki
         try:
             dataSetsRatios = data["dataSetRatios"]
             sessionId = data["sessionId"]
-
-            # networkId = data["networkId"]
-            networkId = 1
         except:
             raise HttpResponseBadRequest
-
-        network = Sieci.objects.get(pk=networkId)
-        imgSizeX = network.inputSizeX
-        imgSizeY = network.inputSizeY
 
         if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
             raise HttpResponseBadRequest
 
-        detaSetObjectsPks = {
-            colorObject.nazwa:  self.divideImagesIntoSets(sessionId, imgSizeY, imgSizeX, dataSetsRatios, colorObject)
-            for colorObject in Kolor.objects.filter(zbiorkolorow__sesja_id=sessionId) #TODO: sprawdzic
-        }
+        dataSetObjectPk = self.divideImagesIntoSets(sessionId, dataSetsRatios)
 
-        return JsonResponse({"dataSetIds": detaSetObjectsPks})
+        return JsonResponse({"dataSetId": dataSetObjectPk})
 
-    def divideImagesIntoSets(self, sessionId, imgSizeY, imgSizeX, dataSetsRatios, colorObject):
+    def divideImagesIntoSets(self, sessionId, dataSetsRatios):
         try:
             allImagesObjects = ObrazPoDostosowaniu.objects.filter(
                 klatkaMacierzysta__film__sesja_id=sessionId,
-                zlecenie__oczekiwanyRozmiarY=imgSizeY,
-                zlecenie__oczekiwanyRozmiarX=imgSizeX,
-                kolor=colorObject,
             )
             allImagesObjects = np.random.permutation(allImagesObjects)
 
@@ -80,30 +67,23 @@ class Learn(View):
 
         try:
             parametersId = data["parametersId"]
-            dataSetIdsDict = data["dataSetIds"]
+            dataSetId = data["dataSetId"]
         except:
             raise HttpResponseBadRequest
 
-        learnObjectPks = {
-            color: self.addLearnObject(description, parametersId, dataSetId)
-            for color, dataSetId in dataSetIdsDict.items()
-        }
-
-        return JsonResponse({"learnObjectPks": learnObjectPks})
+        return JsonResponse({"learnObjectId": self.addLearnObject(description, parametersId, dataSetId)})
 
     def get(self, request, **kwargs):
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
-            color = learnObject.zbiory.kolor.nazwa if learnObject.zbiory and learnObject.zbiory.kolor else ""
-            parameters = self.parametersToDict(learnObject, color)
-
+            parameters = self.parametersToDict(learnObject)
+            #TODO: debug to have all points specified
             responseData = {
                 "trainSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory)),
                 "validatorSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryWalidacyjny=learnObject.zbiory)),
                 "testSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryTestowy=learnObject.zbiory)),
                 "parameters": parameters,
                 "learn_id": learnObject.pk,
-                "color": learnObject.zbiory.kolor.nazwa if learnObject.zbiory and learnObject.zbiory.kolor else ""
             }
             learnObject.statusNauki = 'T'
         except:
@@ -115,37 +95,45 @@ class Learn(View):
         learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId, zbiory_id=dataSetId)
         return learnObject.pk
 
-    def setData(self, set):
-        setPathsWithPositions = [
-            [imgObject.getPath(), imgObject.pozycja.filter(status__status="punktOrginalny").first()]
-            for imgObject in set.iterator()
-        ]
+    def setData(self, set): # TODO: ogarnać
+        setPathsWithPositionsJson = []
+        for imgObject in set.iterator():
+            path = imgObject.getPath()
+            positions = json.loads(imgObject.pozycja.json.replace("'", "\"").replace("None", "null"))
+            # positions = json.loads(imgObject.pozycja.json) #TODO: only because of fixed bug in stage3, remove in future!
 
-        setPathsWithPositions = [[patch, [position.x, position.y]] for patch, position in setPathsWithPositions]
-        return setPathsWithPositions
+            setPathsWithPositionsJson.append({"path": path, "positions": positions})
 
-    def parametersToDict(self, learnObject, color):
+        return setPathsWithPositionsJson
+
+    @staticmethod
+    def getParameter(parameters: ParametryUczenia, key: str):
+        if key in parameters.__dict__:
+            return parameters.__getattribute__(key)
+        else:
+            return None
+
+    def parametersToDict(self, learnObject): #TODO: inaczej rozwiązać zapisywanie modelu
         parameters = learnObject.parametry
         pathToCreate = Path(os.path.join(learnObject.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)))
         pathToCreate.mkdir(parents=True, exist_ok=True)
 
         modelFile = os.path.join(
-            learnObject.zbiory.sesja.folderModele.getPath(),
-            "model_{}_{}".format(learnObject.pk, color)
+            pathToCreate,
+            "model_{}".format(id(learnObject))
         )
-
         return { # nie zmieniac kluczy gdyz uzywane później(learnResponse) jako **kwargs dla funkcji
-            "learning_rate": parameters.learning_rate,
-            "batch_size": parameters.batch_size,
-            "dropout": parameters.dropout,
-            "training_iters": parameters.iloscIteracji,
-            "epoch_size": parameters.epochSize,
-            "save_step": parameters.saveStep,
-            "network": json.loads(parameters.modelSieci.opisXML),
-            "img_size_x": parameters.modelSieci.inputSizeX,
-            "img_size_y": parameters.modelSieci.inputSizeY,
+            "learning_rate": self.getParameter(parameters, "learning_rate"),
+            "batch_size": self.getParameter(parameters, "batch_size"),
+            "dropout": self.getParameter(parameters, "dropout"),
+            "training_iters": self.getParameter(parameters, "iloscIteracji"),
+            "epoch_size": self.getParameter(parameters, "epochSize"),
+            "save_step": self.getParameter(parameters, "saveStep"),
+            "network": self.getParameter(parameters.modelSieci, "opisJSON"),
+            "img_size_x": self.getParameter(parameters.modelSieci, "inputSizeX"),
+            "img_size_y": self.getParameter(parameters.modelSieci, "inputSizeY"),
             "model_file": modelFile,
-            "others": json.loads(parameters.opisUczeniaXML),
+            "others": self.getParameter(parameters, "opisUczeniaJSON"),
         }
 
 

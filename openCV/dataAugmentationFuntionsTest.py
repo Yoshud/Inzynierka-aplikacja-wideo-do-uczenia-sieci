@@ -4,7 +4,7 @@ import copy
 import numpy as np
 
 test_data = {
-    "framePath": "/home/adam/repos/Inzynierka/Sesje/testDodawania_2019-05-01_22_33_46_856457/Obrazy/recording_2019-04-25 22:41:26.783159_frame_2230.png",
+    "framePath": "/home/adam/repos/Inzynierka/Sesje/_2019-05-15_19_54_01_449196/Obrazy/recording_2019-04-25 22:48:38.782457_frame_51.png",
     "augmentationCode": "0113",
     "expectedSize": (500, 500),
 }

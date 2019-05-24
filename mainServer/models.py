@@ -60,7 +60,7 @@ class PozycjaPunktu(Punkt):
 
 
 class PozycjaPunktuPoCrop(models.Model):
-    obraz = models.ForeignKey("ObrazPoDostosowaniu", related_name="pozycja", on_delete=models.CASCADE)
+    obraz = models.OneToOneField("ObrazPoDostosowaniu", related_name="pozycja", on_delete=models.CASCADE)
     json = models.TextField(default="")
 
 
@@ -196,7 +196,7 @@ class ZbioryDanych(models.Model):
 class Sieci(models.Model):
     inputSizeX = models.IntegerField(default=-1)
     inputSizeY = models.IntegerField(default=-1)
-    opisXML = models.TextField(default="")
+    opisJSON = models.TextField(default="")
 
 
 class ParametryUczenia(models.Model):
@@ -208,7 +208,7 @@ class ParametryUczenia(models.Model):
     epochSize = models.IntegerField(default=50, blank=True, null=True)
     modelSieci = models.ForeignKey("Sieci", on_delete=models.CASCADE)
     zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True) #pozostalosc po starym
-    opisUczeniaXML = models.TextField(default="")
+    opisUczeniaJSON = models.TextField(default="", blank=True)
 
 
 class AktualneWyniki(

@@ -22,7 +22,7 @@ def process(path, pathToSave, movieName, movieId):
         if ret != False:
             fullFrameName = "{}_f{}.{}".format(filePrefix, it, imageSufix)
             # fullPathToSave = "{}_f{}.{}".format(pathToSave, it, imageSufix)
-            fullPathToSave = os.path.join(pathToSave, fullFrameName).replace('\\', '/')
+            fullPathToSave = os.path.join(pathToSave, fullFrameName).replace('\\', '/').replace(' ', '_')
             try:
                 cv2.imwrite(fullPathToSave, frame, [cv2.IMWRITE_PNG_COMPRESSION, 0])
                 frameInfo.append({
