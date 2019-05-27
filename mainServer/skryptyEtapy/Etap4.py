@@ -76,8 +76,8 @@ class Learn(View):
     def get(self, request, **kwargs):
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
+            self.sessionObject = learnObject.zbiory.sesja
             parameters = self.parametersToDict(learnObject)
-            #TODO: debug to have all points specified
             responseData = {
                 "trainSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory)),
                 "validatorSet": self.setData(ObrazPoDostosowaniu.objects.filter(zbioryWalidacyjny=learnObject.zbiory)),
@@ -102,9 +102,18 @@ class Learn(View):
             positions = json.loads(imgObject.pozycja.json.replace("'", "\"").replace("None", "null"))
             # positions = json.loads(imgObject.pozycja.json) #TODO: only because of fixed bug in stage3, remove in future!
 
+            #TODO: Do something to ensure we have all points specified (its just walkaround)
+            positions = self.complainPositionSet(positions, self.sessionObject.zbiorKolorow)
             setPathsWithPositionsJson.append({"path": path, "positions": positions})
 
         return setPathsWithPositionsJson
+
+    @staticmethod
+    def complainPositionSet(positions: dict, colorList: ZbiorKolorow):
+        for colorObject in colorList.kolory.iterator():
+            if colorObject.nazwa not in positions:
+                positions[colorObject.nazwa] = None
+        return positions
 
     @staticmethod
     def getParameter(parameters: ParametryUczenia, key: str):
@@ -113,7 +122,7 @@ class Learn(View):
         else:
             return None
 
-    def parametersToDict(self, learnObject): #TODO: inaczej rozwiązać zapisywanie modelu
+    def parametersToDict(self, learnObject):
         parameters = learnObject.parametry
         pathToCreate = Path(os.path.join(learnObject.zbiory.sesja.folderModele.getPath(), "model_{}".format(learnObject.pk)))
         pathToCreate.mkdir(parents=True, exist_ok=True)
