@@ -27,7 +27,7 @@ class SplitMovieAppTracingModel(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls, path: Path) -> "Model":
+    def load(cls, path: Path) -> "SplitMovieAppTracingModel":
         pass
 
     def fit(self, data: List[dict], *args, **kwargs):
@@ -37,6 +37,7 @@ class SplitMovieAppTracingModel(ABC):
             "positions": Dict(<color_tag>, Tuple(<x>, <y>))
         }
         serializable as JSON
+        suggest to use BGR image format like in cv2
         """
         pass
 
@@ -46,6 +47,7 @@ class SplitMovieAppTracingModel(ABC):
         {
             <color_tag>: Tuple(<x>, <y>)
         }
+        suggest to use BGR image format like in cv2 (but format should be in accordance with image format used in fit)
         """
         pass
 
