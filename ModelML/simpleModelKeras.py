@@ -1,4 +1,4 @@
-from keras.models import Sequential
+from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
 from ModelML.dataBatchKeras import Data_picker
 from math import ceil, floor
@@ -8,14 +8,19 @@ from ModelML.lossMethod import Norm2Loss
 
 
 class Model:
-    def __init__(self, dropout: float, img_size_x: int, img_size_y: int, channels: int = 3):
-        self.model = Sequential()
-        self.dropout = dropout
-        self.input_shape = [img_size_x, img_size_y, channels]
+    def __init__(self, dropout: float = None, img_size_x: int = None, img_size_y: int = None, channels: int = 3,
+                 model=None):
+        if model:
+            self.model = model
+            print("only load model - it can be only evaluate or save nothing more")
+        else:
+            self.model = Sequential()
+            self.dropout = dropout
+            self.input_shape = [img_size_x, img_size_y, channels]
 
-        self.classifiers = {
-            "FC": self._add_fc_classifier
-        }
+            self.classifiers = {
+                "FC": self._add_fc_classifier
+            }
 
     def add_classifier(self, classifier_type="FC", classifier_kwargs: dict=dict()):
         self.classifiers[classifier_type](**classifier_kwargs)
@@ -44,6 +49,17 @@ class Model:
         with open(f"{fileName}.json", "w") as json_file:
             json_file.write(model_json)
         self.model.save_weights(f"{fileName}.h5")
+
+    @classmethod
+    def load(cls, fileName):
+        json_file = open(f'{fileName}.json', 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+
+        loaded_model = model_from_json(loaded_model_json)
+        loaded_model.load_weights("model.h5")
+
+        return Model(model=loaded_model)
 
     def _add_conv_layer(self, conv_network_dict: dict, max_pool: int = None, input_shape: list = None):
         if 'window' in conv_network_dict:
