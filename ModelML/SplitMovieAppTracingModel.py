@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 # Base class to implement
 class SplitMovieAppTracingModel(ABC):
     @abstractmethod
-    def __init__(self, network: str, others: str, tags: List[str],
+    def __init__(self, network: Optional[str], others: Optional[str], tags: Optional[List[str]],
                  img_size_x: Optional[int],
                  img_size_y: Optional[int],
                  learning_rate: Optional[float],
@@ -17,9 +17,10 @@ class SplitMovieAppTracingModel(ABC):
                  epoch_size: Optional[int],
                  save_step: Optional[int],
                  model_file: Optional[str]):
+        """__init__ should be call only internally in split movie app, in all other cases Model shouldn't be construct
+        but only loading from file by load classmethod"""
+
         self.tags = tags
-    """__init__ should be call only internally in split movie app, in all other cases Model shouldn't be construct 
-    but only loading from file by load classmethod"""
 
     @abstractmethod
     def save(self, path: Path) -> bool:
