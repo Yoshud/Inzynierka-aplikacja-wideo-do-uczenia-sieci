@@ -3,6 +3,9 @@ from pathlib import Path
 
 from ModelML.SplitMovieAppTracingModel import SplitMovieAppTracingModel
 from typing import List, Dict, Tuple, Optional
+from math import ceil, floor
+
+from ModelML.dataBatchKeras import Data_picker
 from ModelML.simpleModelKeras import Model
 from ModelML.lossMethod import lossMethodDict, Norm2Loss
 from ModelML.optimizerMethod import optimizeMethodDict
@@ -13,15 +16,13 @@ import numpy as np
 
 
 class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
-    pass
 
-    #  x  fit tworzy datapickery z danych (albo napisze wlasny kerasowy tym razem)
+    #  \/  fit tworzy datapickery z danych (albo napisze wlasny kerasowy tym razem)
     #  \/ __init__ z danych tworzy model i daje odpowiednie ustawienia resize
     #  \/  save - tworzy różne pliki i index.json (zawiera tez wielkosc wejscia) i tam zapisuje modele
     #  \/ load - czyta index.json i wczytuje modele
     #  \/  predict - robi resize (i crop?) i używa wszystkich modeli i zwraca wyniki jako słownik
 
-    # TODO: dodac opcje z JSONa (funkcja load)
     def __init__(self, network: str = None, others: str = None, tags: List[str] = None,
                  img_size_x: int = None,
                  img_size_y: int = None,
@@ -31,7 +32,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                  training_iters: int = None,
                  epoch_size: int = None,
                  save_step: int = None,
-                 model_file: int = None,  # TODO: zapisac te nieuzywane i uzyc ich w fit
+                 model_file: int = None,
                  channels=3,
                  is_loading: bool = False,
                  models: List[Model] = None,
@@ -89,26 +90,23 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                 self.models.append(model)
 
     def save(self, path: Path):
-        for tag in self.tags:
-            # create dirs with tagnames, add this dirs to JSON, add input_size to JSON,
-            # save model in every dir (structure + weights)
-            jsonFilePath = path / "index.json"
-            index = {
-                "input_size": self.input_size,
-                "models": {}
-            }
-            for i, tag in enumerate(self.tags):
-                path_to_create = path / tag
-                if path_to_create.is_dir():
-                    shutil.rmtree(str(path_to_create))
-                path_to_create.mkdir(parents=True, exist_ok=True)
-                index["models"][tag] = str(path_to_create)
+        jsonFilePath = path / "index.json"
+        index = {
+            "input_size": self.input_size,
+            "models": {}
+        }
+        for tag, model in zip(self.tags, self.models):
+            path_to_create = path / tag
+            if path_to_create.is_dir():
+                shutil.rmtree(str(path_to_create))
+            path_to_create.mkdir(parents=True, exist_ok=True)
+            index["models"][tag] = str(path_to_create)
 
-                model_file_path = str(path_to_create / "model")
-                self.models[i].save(model_file_path)
+            model_file_path = str(path_to_create / "model")
+            model.save(model_file_path)
 
-            with open(str(jsonFilePath)) as jsonFile:
-                jsonFile.write(json.dumps(index))
+        with open(str(jsonFilePath)) as jsonFile:
+            jsonFile.write(json.dumps(index))
 
     @classmethod
     def load(cls, path: Path) -> "OldSimpleModelWithKeras":
@@ -125,6 +123,31 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
     def predict(self, image: np.array) -> Dict[str, Tuple[float]]:
         image = self._prepare_image(image, self.input_size)
         return {tag: list(model.model.predict(image)) for tag, model in zip(self.tags, self.models)}
+
+    def fit(self, train_data: List[dict], test_data: List[dict], validation_data: List[dict], *args, **kwargs):
+        for tag, model in zip(self.tags, self.models):
+            model_train_data = [(el["path"], el["positions"][tag]) for el in train_data if el["positions"][tag] is not None]
+            model_test_data = [(el["path"], el["positions"][tag]) for el in test_data if el["positions"][tag] is not None]
+            model_validation_data = [(el["path"], el["positions"][tag]) for el in validation_data if el["positions"][tag] is not None]
+            data_picker = Data_picker(
+                self.batch_size, self.epoch_size, self.training_iters,
+                model_test_data, model_train_data, model_validation_data
+            )
+
+            number_of_epoch = max(1, ceil(self.training_iters / self.epoch_size))
+
+            for epoch in range(number_of_epoch):
+                if not epoch % 2:  # epoch per 1 data load
+                    X, Y = data_picker.load_data()
+                    validation_data = data_picker.load_validation_data()
+
+                model.fit(
+                    X, Y,
+                    batch_size=self.batch_size,
+                    validation_data=validation_data,
+                    epochs=epoch + 1,
+                    initial_epoch=epoch,
+                )
 
     @classmethod
     def _prepare_image(cls, img, input_size):

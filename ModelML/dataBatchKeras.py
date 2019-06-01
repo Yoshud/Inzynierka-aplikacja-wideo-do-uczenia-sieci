@@ -53,10 +53,10 @@ class Get_next_batch:
 
 
 class Data_picker:
-    def __init__(self, batch_size, epoch_size, training_iters, img_size, train_patches_with_positions,
+    def __init__(self, batch_size, epoch_size, training_iters, train_patches_with_positions,
                  test_patches_with_positions=list(), validate_patches_with_positions=list(), randomize=True,
                  max_size_of_draw=10000): #TODO: połączenie z epoch_size tak by była używana gdy jest mniejsza jak cała ilość danych
-        self._img_size = img_size
+        # self._img_size = img_size
         self._test_exist = len(test_patches_with_positions) > 0
         self._validation_exist = len(validate_patches_with_positions) > 0
 

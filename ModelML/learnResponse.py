@@ -72,8 +72,7 @@ def processLearnOrder(data):
     learn_id = data["learn_id"]
 
     data_picker = Data_picker(
-        parameters["batch_size"], parameters["epoch_size"], parameters["training_iters"],
-        (parameters["img_size_x"], parameters["img_size_y"]), *data["sets"]
+        parameters["batch_size"], parameters["epoch_size"], parameters["training_iters"], *data["sets"]
     )
 
     optimizer = getOptimizer(data)
