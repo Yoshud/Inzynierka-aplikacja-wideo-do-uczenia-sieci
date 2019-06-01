@@ -19,7 +19,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
     #  \/ __init__ z danych tworzy model i daje odpowiednie ustawienia resize
     #  \/  save - tworzy różne pliki i index.json (zawiera tez wielkosc wejscia) i tam zapisuje modele
     #  \/ load - czyta index.json i wczytuje modele
-    #  x  predict - robi resize (i crop?) i używa wszystkich modeli i zwraca wyniki jako słownik
+    #  \/  predict - robi resize (i crop?) i używa wszystkich modeli i zwraca wyniki jako słownik
 
     # TODO: dodac opcje z JSONa (funkcja load)
     def __init__(self, network: str = None, others: str = None, tags: List[str] = None,
@@ -53,20 +53,20 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             others = json.loads(others)
 
             def objectParameters(others, object):
-                objectParameters = others[object]
-                objectType = objectParameters["type"]
+                object_parameters = others[object]
+                object_type = object_parameters["type"]
                 try:
-                    objectParams = objectParameters["parameters"]
+                    object_params = object_parameters["parameters"]
                 except KeyError:
-                    objectParams = {}
-                return objectType, objectParams
+                    object_params = {}
+                return object_type, object_params
 
             def getLoss(others):
-                lossType, lossParams = objectParameters(others, "loss")
-                lossMethod = lossMethodDict[lossType]
-                if lossParams:
-                    lossMethod.set(**lossParams)
-                return lossMethod.get
+                loss_type, loss_params = objectParameters(others, "loss")
+                loss_method = lossMethodDict[loss_type]
+                if loss_params:
+                    loss_method.set(**loss_params)
+                return loss_method.get
 
             def getOptimizer(others, learning_rate):
                 optimizerType, optimizerParams = objectParameters(others, "optimizer")
@@ -98,53 +98,33 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                 "models": {}
             }
             for i, tag in enumerate(self.tags):
-                pathToCreate = path / tag
-                if pathToCreate.is_dir():
-                    shutil.rmtree(str(pathToCreate))
-                pathToCreate.mkdir(parents=True, exist_ok=True)
-                index["models"][tag] = str(pathToCreate)
+                path_to_create = path / tag
+                if path_to_create.is_dir():
+                    shutil.rmtree(str(path_to_create))
+                path_to_create.mkdir(parents=True, exist_ok=True)
+                index["models"][tag] = str(path_to_create)
 
-                modelFilePath = str(pathToCreate / "model")
-            # create dirs with tagnames, add this dirs to JSON, add input_size to JSON,
-            # save model in every dir (structure + weights)
-            jsonFilePath = path / "index.json"
-            index = {
-                "input_size": self.input_size,
-                "models": {}
-            }
-            for i, tag in enumerate(self.tags):
-                pathToCreate = path / tag
-                if pathToCreate.is_dir():
-                    shutil.rmtree(str(pathToCreate))
-                pathToCreate.mkdir(parents=True, exist_ok=True)
-                index["models"][tag] = str(pathToCreate)
-
-                modelFilePath = str(pathToCreate / "model")
-
-                self.models[i].save(modelFilePath)
-
-            with open(str(jsonFilePath)) as jsonFile:
-                jsonFile.write(json.dumps(index))
-
-                self.models[i].save(modelFilePath)
+                model_file_path = str(path_to_create / "model")
+                self.models[i].save(model_file_path)
 
             with open(str(jsonFilePath)) as jsonFile:
                 jsonFile.write(json.dumps(index))
 
     @classmethod
     def load(cls, path: Path) -> "OldSimpleModelWithKeras":
-        jsonFilePath = path / "index.json"
-        json_file = open(str(jsonFilePath), 'r')
+        json_file_path = path / "index.json"
+        json_file = open(str(json_file_path), 'r')
         index = json.loads(json_file.read())
         json_file.close()
-        modelsDict = index["models"]
+        models_dict = index["models"]
         input_size = index["input_size"]
-        tags = list(modelsDict.keys())
-        models = [Model.load(modelPath) for modelPath in modelsDict.values()]
+        tags = list(models_dict.keys())
+        models = [Model.load(modelPath) for modelPath in models_dict.values()]
         return OldSimpleModelWithKeras(is_loading=True, models=models, tags=tags, input_size=input_size)
 
     def predict(self, image: np.array) -> Dict[str, Tuple[float]]:
-        pass
+        image = self._prepare_image(image, self.input_size)
+        return {tag: list(model.model.predict(image)) for tag, model in zip(self.tags, self.models)}
 
     @classmethod
     def _prepare_image(cls, img, input_size):
