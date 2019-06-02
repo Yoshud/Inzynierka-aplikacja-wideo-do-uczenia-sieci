@@ -1,5 +1,7 @@
+from typing import Callable, Optional
+
 import numpy as np
-from scipy.misc import imread
+import cv2
 
 
 class Get_next_batch:
@@ -54,9 +56,10 @@ class Get_next_batch:
 
 class Data_picker:
     def __init__(self, batch_size, epoch_size, training_iters, train_patches_with_positions,
-                 test_patches_with_positions=list(), validate_patches_with_positions=list(), randomize=True,
+                 test_patches_with_positions=list(), validate_patches_with_positions=list(),
+                 transform: Optional[Callable]=None, randomize=True,
                  max_size_of_draw=10000): #TODO: połączenie z epoch_size tak by była używana gdy jest mniejsza jak cała ilość danych
-        # self._img_size = img_size
+        self.transform = transform
         self._test_exist = len(test_patches_with_positions) > 0
         self._validation_exist = len(validate_patches_with_positions) > 0
 
@@ -117,7 +120,7 @@ class Data_picker:
 
         for i, (path, position) in enumerate(patches_with_positions):
             try:
-                img = imread(path)
+                img = self.transform(cv2.imread(path)) if self.transform is not None else cv2.imread(path)
                 X_1.append(img)
                 Y[i, :] = position
             except:

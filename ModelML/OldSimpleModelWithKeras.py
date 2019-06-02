@@ -32,7 +32,6 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                  training_iters: int = None,
                  epoch_size: int = None,
                  save_step: int = None,
-                 model_file: int = None,
                  channels=3,
                  is_loading: bool = False,
                  models: List[Model] = None,
@@ -49,7 +48,6 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             self.training_iters = training_iters
             self.epoch_size = epoch_size
             self.save_step = save_step
-            self.model_file = model_file
             network = json.loads(network)
             others = json.loads(others)
 
@@ -131,7 +129,8 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             model_validation_data = [(el["path"], el["positions"][tag]) for el in validation_data if el["positions"][tag] is not None]
             data_picker = Data_picker(
                 self.batch_size, self.epoch_size, self.training_iters,
-                model_test_data, model_train_data, model_validation_data
+                model_train_data, model_test_data, model_validation_data,
+                transform=lambda img: self._prepare_image(img, self.input_size)
             )
 
             number_of_epoch = max(1, ceil(self.training_iters / self.epoch_size))

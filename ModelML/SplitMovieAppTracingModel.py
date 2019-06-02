@@ -15,8 +15,7 @@ class SplitMovieAppTracingModel(ABC):
                  dropout: Optional[float],
                  training_iters: Optional[int],
                  epoch_size: Optional[int],
-                 save_step: Optional[int],
-                 model_file: Optional[str]):
+                 save_step: Optional[int]):
         """__init__ should be call only internally in split movie app, in all other cases Model shouldn't be construct
         but only loading from file by load classmethod"""
 
