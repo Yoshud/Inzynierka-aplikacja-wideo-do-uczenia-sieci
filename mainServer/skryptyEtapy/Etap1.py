@@ -61,8 +61,8 @@ class AddMovie(JsonView):
         now = timezone.now()
 
         sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
-        sessionPath = \
-            self._get_data('toFolderPath', os.path.join(os.path.join(pathUp(currentPath()), 'Sesje'), sessionName))
+        sessionPath = self._get_data('sessionPath', os.path.join(pathUp(currentPath()), 'Sesje'))
+        sessionPath = os.path.join(sessionPath, sessionName)
 
         imageFolder = FolderZObrazami.objects.create(nazwa=imagesFolderName)
         modelsFolder = FolderModele.objects.create(nazwa=modelsFolderName)
