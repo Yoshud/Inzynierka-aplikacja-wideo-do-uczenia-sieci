@@ -268,7 +268,7 @@ class Sesja(models.Model):
     data = models.DateTimeField(default=timezone.now)
     nazwa = models.TextField(default="Nienazwana_{}".format(timezone.now()))
     ostatniaAktualizacja = models.DateTimeField(default=timezone.now)
-    sciezka = models.FilePathField(default="", blank=True, null=True)
+    sciezka = models.TextField(default="", blank=True, null=True)
     zbiorKolorow = models.ForeignKey(
         "ZbiorKolorow", on_delete=models.deletion.PROTECT
     )

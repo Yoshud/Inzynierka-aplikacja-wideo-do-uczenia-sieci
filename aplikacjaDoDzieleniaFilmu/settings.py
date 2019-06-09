@@ -94,6 +94,14 @@ DATABASES = {
     #     'HOST': '172.17.0.1',
     #     'PORT': '5433',
     # }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'movieDivideApp',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '',
+    #     'HOST': '172.17.0.1',
+    #     'PORT': '5434',
+    # }
 }
 
 # Password validation
