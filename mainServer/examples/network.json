@@ -10,7 +10,7 @@
         {"filters": 16, "window": [10, 10], "max_pool": 1}
     ],
     "full_connected_network_dicts" : [
-        {"size": 400, "relu": true, "dropout": true},
+        {"size": 200, "relu": true, "dropout": true},
         {"size": 80, "relu": true, "dropout": true},
         {"size": 2, "relu": false, "dropout": false}
     ]

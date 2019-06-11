@@ -81,7 +81,7 @@ class Learn(View):
 
             parameters = self._parametersToDict(learnObject)
             model_path = self._createModelPath(learnObject)
-            sets = self._setsData(learnObject),
+            sets = self._setsData(learnObject)
 
             responseData = {
                 "sets": sets,
@@ -121,7 +121,7 @@ class Learn(View):
 
     def _setsData(self, learnObject):
         setsData = {
-            "train_Data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory)),
+            "train_data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory)),
             "validation_data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryWalidacyjny=learnObject.zbiory)),
             "test_data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryTestowy=learnObject.zbiory)),
         }

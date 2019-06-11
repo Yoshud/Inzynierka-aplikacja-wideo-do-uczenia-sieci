@@ -14,6 +14,14 @@ import json
 import shutil
 import numpy as np
 
+from copy import deepcopy
+
+import sys
+
+# log = open("log.txt", "w")
+# sys.stderr = log
+# sys.stdout = log
+
 
 class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
 
@@ -76,9 +84,10 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
 
             self.models = []
             for i in range(len(tags)):
+                model_network = deepcopy(network)
                 model = Model(dropout, img_size_x, img_size_y, channels)
-                model.add_conv_layers(network['conv_networks_dicts'])
-                model.add_classifier("FC", {"full_connected_network_dicts": network['full_connected_network_dicts']})
+                model.add_conv_layers(model_network['conv_networks_dicts'])
+                model.add_classifier("FC", {"full_connected_network_dicts": model_network['full_connected_network_dicts']})
                 model.compile(
                     loss=getLoss(others),
                     optimizer=getOptimizer(others, learning_rate),
@@ -103,7 +112,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             model_file_path = str(path_to_create / "model")
             model.save(model_file_path)
 
-        with open(str(jsonFilePath)) as jsonFile:
+        with open(str(jsonFilePath), "w+") as jsonFile:
             jsonFile.write(json.dumps(index))
 
     @classmethod
@@ -122,6 +131,10 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
         image = self._prepare_image(image, self.input_size)
         return {tag: list(model.model.predict(image)) for tag, model in zip(self.tags, self.models)}
 
+    def predict_batch(self, images: List[np.array]) -> List[Dict[str, Tuple[float]]]:
+        images = [self._prepare_image(image, self.input_size) for image in images]
+        return [self.predict(image) for image in images]
+
     def fit(self, train_data: List[dict], test_data: List[dict], validation_data: List[dict], *args, **kwargs):
         for tag, model in zip(self.tags, self.models):
             model_train_data = [(el["path"], el["positions"][tag]) for el in train_data if el["positions"][tag] is not None]
@@ -138,12 +151,12 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             for epoch in range(number_of_epoch):
                 if not epoch % 2:  # epoch per 1 data load
                     X, Y = data_picker.load_data()
-                    validation_data = data_picker.load_validation_data()
+                    validation = data_picker.load_validation_data()
 
                 model.fit(
                     X, Y,
                     batch_size=self.batch_size,
-                    validation_data=validation_data,
+                    validation_data=validation,
                     epochs=epoch + 1,
                     initial_epoch=epoch,
                 )

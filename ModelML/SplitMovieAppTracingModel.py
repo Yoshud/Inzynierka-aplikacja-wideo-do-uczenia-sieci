@@ -7,15 +7,15 @@ from abc import ABC, abstractmethod
 # Base class to implement
 class SplitMovieAppTracingModel(ABC):
     @abstractmethod
-    def __init__(self, network: Optional[str], others: Optional[str], tags: Optional[List[str]],
-                 img_size_x: Optional[int],
-                 img_size_y: Optional[int],
-                 learning_rate: Optional[float],
-                 batch_size: Optional[int],
-                 dropout: Optional[float],
-                 training_iters: Optional[int],
-                 epoch_size: Optional[int],
-                 save_step: Optional[int]):
+    def __init__(self, network: Optional[str] = None, others: Optional[str] = None, tags: Optional[List[str]] = None,
+                 img_size_x: Optional[int] = None,
+                 img_size_y: Optional[int] = None,
+                 learning_rate: Optional[float] = None,
+                 batch_size: Optional[int] = None,
+                 dropout: Optional[float] = None,
+                 training_iters: Optional[int] = None,
+                 epoch_size: Optional[int] = None,
+                 save_step: Optional[int] = None):
         """__init__ should be call only internally in split movie app, in all other cases Model shouldn't be construct
         but only loading from file by load classmethod"""
 

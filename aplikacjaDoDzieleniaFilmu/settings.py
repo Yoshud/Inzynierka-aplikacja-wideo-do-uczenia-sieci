@@ -78,14 +78,14 @@ WSGI_APPLICATION = 'aplikacjaDoDzieleniaFilmu.wsgi.application'
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'movieDivideApp',
-        'USER': 'postgres',
-        'PASSWORD': '',
-        'HOST': '172.17.0.1',
-        'PORT': '5432',
-    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql',
+    #     'NAME': 'movieDivideApp',
+    #     'USER': 'postgres',
+    #     'PASSWORD': '',
+    #     'HOST': '172.17.0.1',
+    #     'PORT': '5432',
+    # }
     # 'default': {
     #     'ENGINE': 'django.db.backends.postgresql',
     #     'NAME': 'movieDivideAppTest',
@@ -94,14 +94,14 @@ DATABASES = {
     #     'HOST': '172.17.0.1',
     #     'PORT': '5433',
     # }
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': 'movieDivideApp',
-    #     'USER': 'postgres',
-    #     'PASSWORD': '',
-    #     'HOST': '172.17.0.1',
-    #     'PORT': '5434',
-    # }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'movieDivideApp',
+        'USER': 'postgres',
+        'PASSWORD': '',
+        'HOST': '172.17.0.1',
+        'PORT': '5434',
+    }
 }
 
 # Password validation

@@ -6,7 +6,7 @@
     }
   },
   "loss": {
-    "type": "combined",
+    "type": "combined_with_mean_diff_and_std",
     "parameters": {
       "norm_2_ratio": 0.2,
       "subtract_ratio": 1.1
