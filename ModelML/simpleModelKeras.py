@@ -57,7 +57,7 @@ class Model:
         json_file.close()
 
         loaded_model = model_from_json(loaded_model_json)
-        loaded_model.load_weights("model.h5")
+        loaded_model.load_weights("model.h5")  # TODO: change to path
 
         return Model(model=loaded_model)
 

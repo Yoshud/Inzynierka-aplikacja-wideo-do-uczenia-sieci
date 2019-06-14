@@ -62,6 +62,9 @@ class Data_picker:
         self.transform = transform
         self._test_exist = len(test_patches_with_positions) > 0
         self._validation_exist = len(validate_patches_with_positions) > 0
+        # self.standarize_done = False
+        self.mean = None
+        self.std = None
 
         size_of_batch = min(max_size_of_draw, int(batch_size * epoch_size), len(train_patches_with_positions))
         size_of_batch_test = min(max_size_of_draw, int(batch_size * epoch_size), len(test_patches_with_positions))
@@ -109,10 +112,13 @@ class Data_picker:
             return self._return_from_patches_with_positions(self._validation_load_method())
 
     @staticmethod
-    def _standarize(data):
-        mean = data.mean(axis=0)
-        std = data.std(axis=0)
-        return (data - mean) / (std + 0.00001)
+    def standarize(data, mean=None, std=None):  # After first iteration remember standarized values and save them
+        mean = data.mean(axis=0) if mean is None else mean
+        std = data.std(axis=0) if std is None else std
+        return (data - mean) / (std + 0.00001), mean, std
+
+    def is_standarized(self):
+        return self.mean is not None and self.std is not None
 
     def _return_from_patches_with_positions(self, patches_with_positions, standarize=True):
         X_1 = list()
@@ -127,5 +133,9 @@ class Data_picker:
                 print(path)
 
         X = np.array(X_1)
-        standarized = self._standarize(X) if standarize else X
-        return standarized, Y
+
+        if standarize:
+            standarized, self.mean, self.std = self.standarize(X, self.mean, self.std)
+            return standarized, Y
+        else:
+            return X, Y

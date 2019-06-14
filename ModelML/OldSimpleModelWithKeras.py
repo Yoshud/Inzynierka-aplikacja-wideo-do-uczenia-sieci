@@ -18,9 +18,9 @@ from copy import deepcopy
 
 import sys
 
-# log = open("log.txt", "w")
-# sys.stderr = log
-# sys.stdout = log
+log = open("log.txt", "w")
+sys.stderr = log
+sys.stdout = log
 
 
 class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
@@ -43,11 +43,13 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                  channels=3,
                  is_loading: bool = False,
                  models: List[Model] = None,
+                 mean_and_std: List[Tuple[np.array, np.array]] = [],
                  input_size: Tuple[int, int] = None):
         if is_loading:
             super().__init__(tags=tags)
             self.input_size = input_size
             self.models = models
+            self.mean_and_std = mean_and_std
         else:
             super().__init__(network, others, tags)
             self.input_size = (img_size_x, img_size_y)
@@ -83,6 +85,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                 return optimizer
 
             self.models = []
+            self.mean_and_std = []
             for i in range(len(tags)):
                 model_network = deepcopy(network)
                 model = Model(dropout, img_size_x, img_size_y, channels)
@@ -95,6 +98,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                 )
 
                 self.models.append(model)
+                self.mean_and_std.append(None)
 
     def save(self, path: Path):
         jsonFilePath = path / "index.json"
@@ -102,7 +106,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             "input_size": self.input_size,
             "models": {}
         }
-        for tag, model in zip(self.tags, self.models):
+        for tag, model, mean_and_std in zip(self.tags, self.models, self.mean_and_std):
             path_to_create = path / tag
             if path_to_create.is_dir():
                 shutil.rmtree(str(path_to_create))
@@ -111,6 +115,10 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
 
             model_file_path = str(path_to_create / "model")
             model.save(model_file_path)
+
+            mean, std = mean_and_std
+            np.save(path.joinpath(path_to_create, "mean.npy"), mean)
+            np.save(path.joinpath(path_to_create, "std.npy"), std)
 
         with open(str(jsonFilePath), "w+") as jsonFile:
             jsonFile.write(json.dumps(index))
@@ -125,7 +133,16 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
         input_size = index["input_size"]
         tags = list(models_dict.keys())
         models = [Model.load(modelPath) for modelPath in models_dict.values()]
-        return OldSimpleModelWithKeras(is_loading=True, models=models, tags=tags, input_size=input_size)
+
+        mean_and_std = [(np.load(path.joinpath(modelPath, "mean.npy")), (np.load(path.joinpath(modelPath, "std.npy"))))
+                        for modelPath in models_dict.values()]
+        return OldSimpleModelWithKeras(
+            is_loading=True,
+            models=models,
+            tags=tags,
+            input_size=input_size,
+            mean_and_std=mean_and_std
+        )
 
     def predict(self, image: np.array) -> Dict[str, Tuple[float]]:
         image = self._prepare_image(image, self.input_size)
@@ -136,7 +153,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
         return [self.predict(image) for image in images]
 
     def fit(self, train_data: List[dict], test_data: List[dict], validation_data: List[dict], *args, **kwargs):
-        for tag, model in zip(self.tags, self.models):
+        for tag, model, i in zip(self.tags, self.models, range(len(self.models))):
             model_train_data = [(el["path"], el["positions"][tag]) for el in train_data if el["positions"][tag] is not None]
             model_test_data = [(el["path"], el["positions"][tag]) for el in test_data if el["positions"][tag] is not None]
             model_validation_data = [(el["path"], el["positions"][tag]) for el in validation_data if el["positions"][tag] is not None]
@@ -149,7 +166,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             number_of_epoch = max(1, ceil(self.training_iters / self.epoch_size))
 
             for epoch in range(number_of_epoch):
-                if not epoch % 2:  # epoch per 1 data load
+                if not epoch % 3:  # epoch per 1 data load
                     X, Y = data_picker.load_data()
                     validation = data_picker.load_validation_data()
 
@@ -161,8 +178,11 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                     initial_epoch=epoch,
                 )
 
+            self.mean_and_std[i] = (data_picker.mean, data_picker.std)
+            # TODO: add save and load mean and std
+
     @classmethod
-    def _prepare_image(cls, img, input_size):
+    def _prepare_image(cls, img, input_size):  # add standarization with value from model
         img_height = img.shape[0]
         crop_position = cls._image_center(img.shape)
 
@@ -192,3 +212,4 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
     def _resize(cls, img, size=(0, 0), scale=0):
         img = cv2.resize(img, tuple(size), scale, scale, interpolation=cv2.INTER_AREA)
         return img
+#12600
