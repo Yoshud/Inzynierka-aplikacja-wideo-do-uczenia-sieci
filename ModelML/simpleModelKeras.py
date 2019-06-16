@@ -52,12 +52,15 @@ class Model:
 
     @classmethod
     def load(cls, fileName):
-        json_file = open(f'{fileName}.json', 'r')
+        json_file_name = f"{fileName}/model.json"
+        model_file_name = f"{fileName}/model.h5"
+
+        json_file = open(json_file_name, 'r')
         loaded_model_json = json_file.read()
         json_file.close()
 
         loaded_model = model_from_json(loaded_model_json)
-        loaded_model.load_weights("model.h5")  # TODO: change to path
+        loaded_model.load_weights(model_file_name)
 
         return Model(model=loaded_model)
 

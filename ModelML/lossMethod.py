@@ -58,16 +58,17 @@ class CombinedWithMeanDiffLoss(LossMethod):
                 ]
             )
 
+
 class CombinedWithMeanDiffAndStdLoss(LossMethod):
     norm_2_ratio = 0.2
     subtract_ratio = 1.1
     diff_ratio = 0.2
     std_ratio = 3.0
     parameters = [
-        Parameter("norm_2_ratio", "float", 0.0, 5.0, 0.2).dict(),
-        Parameter("subtract_ratio", "float", 0.0, 10.0, 1.1).dict(),
-        Parameter("diff_ratio", "float", 0.0, 25.0, 0.2).dict(),
-        Parameter("std_ratio", "float", 0.0, 50.0, 3.0).dict(),
+        Parameter("norm_2_ratio", "float", 0.0, 5.0, 0.2).dict(),  # 1.0
+        Parameter("subtract_ratio", "float", 0.0, 10.0, 1.1).dict(),  # 0.0
+        Parameter("diff_ratio", "float", 0.0, 25.0, 0.2).dict(),  # 0.0
+        Parameter("std_ratio", "float", 0.0, 50.0, 3.0).dict(),  # 0.8
     ]
 
     def get(self, pred, y):

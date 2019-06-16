@@ -146,7 +146,8 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
 
     def predict(self, image: np.array) -> Dict[str, Tuple[float]]:
         image = self._prepare_image(image, self.input_size)
-        return {tag: list(model.model.predict(image)) for tag, model in zip(self.tags, self.models)}
+        only_one_images = np.array([image])
+        return {tag: list(model.model.predict(only_one_images)) for tag, model in zip(self.tags, self.models)}
 
     def predict_batch(self, images: List[np.array]) -> List[Dict[str, Tuple[float]]]:
         images = [self._prepare_image(image, self.input_size) for image in images]

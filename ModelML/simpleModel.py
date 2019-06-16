@@ -22,7 +22,7 @@ def max_pool(img, k):
 
 def conv_net(_X, _conv_network_variables_dicts, _fc_network_variables_dicts, _conv_out_size, _dropout, img_size_x,
              img_size_y, channels):
-    _X = tf.reshape(_X, shape=[-1, img_size_x, img_size_y, channels])  # -1 -> dostosuj, 320x320 -> rozmiar obrazka, 1 -> głębokosć (RGB = 3)
+    _X = tf.reshape(_X, shape=[-1, img_size_x, img_size_y, channels])
     print(_X.shape, flush=True)
 
     def one_conv_layer(conv_before, conv_network_variables_dict):
