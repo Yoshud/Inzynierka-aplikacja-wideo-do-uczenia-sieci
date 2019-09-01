@@ -1,8 +1,11 @@
 import time
 from pathlib import Path
 
+from OldSimpleModelWithKeras import OldSimpleModelWithKeras
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
 from internalConnection.InternalConnection import InternalConnection
-from ModelML.OldSimpleModelWithKeras import OldSimpleModelWithKeras
 
 url = "http://localhost:8000/learn"
 urlResponse = "http://localhost:8000/learnResults"

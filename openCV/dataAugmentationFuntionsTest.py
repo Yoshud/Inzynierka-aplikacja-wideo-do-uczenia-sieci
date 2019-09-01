@@ -1,4 +1,4 @@
-from openCV.dataAugmentationFunctions import process
+from dataAugmentationFunctions import process
 import cv2
 import copy
 import numpy as np

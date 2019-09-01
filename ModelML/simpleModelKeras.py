@@ -1,10 +1,10 @@
 from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
-from ModelML.dataBatchKeras import Data_picker
+from dataBatchKeras import Data_picker
 from math import ceil, floor
 from keras.utils import plot_model
 
-from ModelML.lossMethod import Norm2Loss
+from lossMethod import Norm2Loss
 
 
 class Model:

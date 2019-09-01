@@ -1,13 +1,18 @@
 import time
-from ModelML.simpleModelKeras import train
-from ModelML.dataBatchKeras import Data_picker
-from ModelML.optimizerMethod import optimizeMethodDict
-from ModelML.lossMethod import lossMethodDict
+from simpleModelKeras import train
+from dataBatchKeras import Data_picker
+from optimizerMethod import optimizeMethodDict
+from lossMethod import lossMethodDict
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
 from internalConnection.InternalConnection import InternalConnection
 
 url = "http://localhost:8000/learn"
 urlResponse = "http://localhost:8000/learnResults"
 connection = InternalConnection(url, urlResponse)
+
 
 def sendingRequest(results):
     return connection.sendResponse(results)
@@ -61,11 +66,13 @@ def getLoss(data):
         lossMethod.set(**lossParams)
     return lossMethod.get
 
+
 def getDataParameters(data):
     parameters = data["parameters"]
     for key, value in parameters["network"].items():
         parameters[key] = value
     return parameters
+
 
 def processLearnOrder(data):
     parameters = getDataParameters(data)

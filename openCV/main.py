@@ -1,15 +1,7 @@
 import cv2
 import time
-# import numpy as np
-# import tensorflow as tf
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# from functools import reduce
-# import os
-# from scipy.misc import imread
-# from PIL import Image
-# from PIL import ImageDraw
-# from PIL import ImageFont
+
+# TODO: usunąć ten plik
 
 def process(path, pathToSave):
     cap = cv2.VideoCapture(path.replace('\\', '/'))

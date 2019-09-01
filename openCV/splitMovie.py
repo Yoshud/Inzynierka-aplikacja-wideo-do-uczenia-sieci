@@ -1,6 +1,8 @@
 import time
-# from openCV.main import process
-from openCV.processFilm import process
+from processFilm import process
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
 from internalConnection.InternalConnection import InternalConnection
 
 url = "http://localhost:8000/returnMoviesToProcess"

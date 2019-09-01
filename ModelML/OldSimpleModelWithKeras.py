@@ -1,14 +1,14 @@
 import cv2
 from pathlib import Path
 
-from ModelML.SplitMovieAppTracingModel import SplitMovieAppTracingModel
-from typing import List, Dict, Tuple, Optional
-from math import ceil, floor
+from SplitMovieAppTracingModel import SplitMovieAppTracingModel
+from typing import List, Dict, Tuple
+from math import ceil
 
-from ModelML.dataBatchKeras import Data_picker
-from ModelML.simpleModelKeras import Model
-from ModelML.lossMethod import lossMethodDict, Norm2Loss
-from ModelML.optimizerMethod import optimizeMethodDict
+from dataBatchKeras import Data_picker
+from simpleModelKeras import Model
+from lossMethod import lossMethodDict, Norm2Loss
+from optimizerMethod import optimizeMethodDict
 
 import json
 import shutil
@@ -24,13 +24,6 @@ sys.stdout = log
 
 
 class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
-
-    #  \/  fit tworzy datapickery z danych (albo napisze wlasny kerasowy tym razem)
-    #  \/ __init__ z danych tworzy model i daje odpowiednie ustawienia resize
-    #  \/  save - tworzy różne pliki i index.json (zawiera tez wielkosc wejscia) i tam zapisuje modele
-    #  \/ load - czyta index.json i wczytuje modele
-    #  \/  predict - robi resize (i crop?) i używa wszystkich modeli i zwraca wyniki jako słownik
-
     def __init__(self, network: str = None, others: str = None, tags: List[str] = None,
                  img_size_x: int = None,
                  img_size_y: int = None,
@@ -45,6 +38,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                  models: List[Model] = None,
                  mean_and_std: List[Tuple[np.array, np.array]] = [],
                  input_size: Tuple[int, int] = None):
+
         if is_loading:
             super().__init__(tags=tags)
             self.input_size = input_size
@@ -123,6 +117,9 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
         with open(str(jsonFilePath), "w+") as jsonFile:
             jsonFile.write(json.dumps(index))
 
+        shutil.copyfile("log.txt", str(path / "log.txt"))
+        shutil.copyfile("response.json", str(path / "parameters.json"))
+
     @classmethod
     def load(cls, path: Path) -> "OldSimpleModelWithKeras":
         json_file_path = path / "index.json"
@@ -180,7 +177,6 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                 )
 
             self.mean_and_std[i] = (data_picker.mean, data_picker.std)
-            # TODO: add save and load mean and std
 
     @classmethod
     def _prepare_image(cls, img, input_size):  # add standarization with value from model

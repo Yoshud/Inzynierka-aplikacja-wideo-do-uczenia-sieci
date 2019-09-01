@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 import json
 
-from ModelML.OldSimpleModelWithKeras import OldSimpleModelWithKeras
+from OldSimpleModelWithKeras import OldSimpleModelWithKeras
 
 
 def checkForOrderToProcess():

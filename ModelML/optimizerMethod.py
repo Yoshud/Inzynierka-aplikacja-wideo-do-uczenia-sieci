@@ -1,7 +1,6 @@
 from tensorflow import train as tf
-from tensorflow.python.training.optimizer import Optimizer
 import numpy as np
-from ModelML.parameter import Parameter
+from parameter import Parameter
 
 
 class OptimizeMethod:

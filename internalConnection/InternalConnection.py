@@ -3,6 +3,7 @@ import requests
 import json
 from requests.exceptions import ConnectionError
 
+
 class InternalConnection:
     def __init__(self, url, urlResponse):
         self._urlResponse = urlResponse
@@ -11,7 +12,7 @@ class InternalConnection:
     def sendResponse(self, payload):
         try:
             r = requests.post(self._urlResponse, data=json.dumps(payload))
-            if r.status_code==200 and r.json()["ok"]:
+            if r.status_code == 200 and r.json()["ok"]:
                 return True
             else:
                 time.sleep(5)

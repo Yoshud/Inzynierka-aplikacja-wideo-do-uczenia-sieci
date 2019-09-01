@@ -1,10 +1,12 @@
 import time
 import os
-from openCV.dataAugmentationFunctions import process
+from dataAugmentationFunctions import process
 import cv2
 from pathlib import Path
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
 from internalConnection.InternalConnection import InternalConnection
-import json
+
 
 url = "http://localhost:8000/dataAugmentationOrder"
 urlResponse = "http://localhost:8000/imageAfterDataAugmentation"
