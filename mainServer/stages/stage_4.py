@@ -1,12 +1,17 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.http import HttpResponseBadRequest
+from django.http import HttpResponseServerError
+from django.views import View
+
 from typing import List
-from mainServer.stages.helpersMethod import *
 import json
-import os
 from functools import reduce
 import numpy as np
+
+from mainServer.stages.JsonView import JsonView
+from mainServer.stages.helpersMethod import *
 
 
 @method_decorator(csrf_exempt, name='dispatch')

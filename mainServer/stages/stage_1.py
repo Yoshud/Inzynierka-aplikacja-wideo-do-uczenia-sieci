@@ -1,6 +1,10 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.http import HttpResponseBadRequest
+from django.views import View
+
+from mainServer.stages.JsonView import JsonView
 from mainServer.stages.helpersMethod import *
 import cv2
 import datetime
@@ -16,9 +20,9 @@ class GetObjectsFromPath(View):
         path = request.GET.get('path', None)
         parent = request.GET.get('parent', None)
         child = request.GET.get('child', '')
-        if path == None:
+        if path is None:
             raise HttpResponseBadRequest
-        if parent != None:
+        if parent is not None:
             path = pathUp(path)
         else:
             if child != '':

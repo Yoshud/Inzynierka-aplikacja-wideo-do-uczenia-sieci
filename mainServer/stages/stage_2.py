@@ -2,6 +2,11 @@ import base64
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.http import HttpResponseBadRequest
+from django.http import HttpResponseServerError
+from django.views import View
+
+from mainServer.stages.JsonView import JsonView
 from mainServer.stages.helpersMethod import *
 from django.http import HttpResponse
 from scipy.interpolate import interp1d
