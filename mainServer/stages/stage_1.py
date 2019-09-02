@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from mainServer.skryptyEtapy.helpersMethod import *
+from mainServer.stages.helpersMethod import *
 import cv2
 import datetime
 from mainServer.models import *
@@ -87,7 +87,8 @@ class AddMovie(JsonView):
             'sessionId': session.pk
         })
 
-    def addMovie(self, sessionPK, path):
+    @staticmethod
+    def addMovie(sessionPK, path):
         cap = cv2.VideoCapture(path)
         if cap is None or not cap.isOpened():
             raise Http404
@@ -121,14 +122,15 @@ class AddMovie(JsonView):
             raise Http404
         return int(match[1])
 
-    def _groupImagesInMovies(self, imageFileNames):
-        imageFileNames.sort(key=self._getSufixNumberFromFilename)
+    @classmethod
+    def _groupImagesInMovies(cls, imageFileNames):
+        imageFileNames.sort(key=cls._getSufixNumberFromFilename)
 
         movies = []
         movies.append([imageFileNames[0]])
-        number = self._getSufixNumberFromFilename(imageFileNames[0])
+        number = cls._getSufixNumberFromFilename(imageFileNames[0])
         for fileName in imageFileNames[1:]:
-            nextImgNum = self._getSufixNumberFromFilename(fileName)
+            nextImgNum = cls._getSufixNumberFromFilename(fileName)
 
             if nextImgNum == number + 1:
                 movies[-1].append(fileName)
@@ -167,14 +169,16 @@ class AddMovie(JsonView):
         for status in statuses:
             movie.status.add(status)
 
-    def addMoviesFromImages(self, imageFileNames, mainPath, sessionPK):
-        imagesGroups = self._groupImagesInMovies(imageFileNames)
+    @classmethod
+    def addMoviesFromImages(cls, imageFileNames, mainPath, sessionPK):
+        imagesGroups = cls._groupImagesInMovies(imageFileNames)
         for imagesGroup in imagesGroups:
-            self._addMovieFromImageGroup(imagesGroup, mainPath, sessionPK)
+            cls._addMovieFromImageGroup(imagesGroup, mainPath, sessionPK)
 
-    def addFolder(self, sessionPK, path):
+    @classmethod
+    def addFolder(cls, sessionPK, path):
         folders, files = foldersAndMovieFilesFromPath(path)
         for file in files:
-            self.addMovie(sessionPK, os.path.join(path, file))
+            cls.addMovie(sessionPK, os.path.join(path, file))
 
-        self.addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)
+        cls.addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)

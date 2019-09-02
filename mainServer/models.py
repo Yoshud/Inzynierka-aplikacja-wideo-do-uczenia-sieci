@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 import os
 
+
 class Status(models.Model):
     status = models.CharField("status", max_length=100, unique=True)
 
@@ -38,6 +39,7 @@ class ZbiorKolorow(models.Model):
     domyslny_kolor = models.ForeignKey(
         "Kolor", related_name="zbior_domyslny_kolor", blank=True, null="True", on_delete=models.SET_NULL
     )
+
 
 class Punkt(models.Model):
     x = models.IntegerField("x", default=0, null=True, blank=True)
@@ -136,6 +138,7 @@ class FoldeZPrzetworzonymiObrazami(models.Model):
         else:
             raise AttributeError("Not defined sciezka and nazwa")
 
+
 class FolderModele(models.Model):
     sciezka = models.TextField(default="", blank=True, null=True)
     nazwa = models.TextField(default="", blank=True, null=True)
@@ -178,13 +181,11 @@ class ObrazPoDostosowaniu(models.Model):
 
 class ZlecenieAugmentacji(models.Model):
     klatka = models.ForeignKey("Klatka", on_delete=models.CASCADE)
-    kodAugmentacji = models.IntegerField(default=114)  # po koleji: flipV(0 or 1), flipH(0 or 1), randomCrop(1-9)
+    kodAugmentacji = models.IntegerField(default=114)  # po kolei: flipV(0 or 1), flipH(0 or 1), randomCrop(1-9)
     folder = models.ForeignKey("FolderZPrzygotowanymiObrazami", on_delete=models.CASCADE)
     wTrakcie = models.BooleanField(default=False)
-    # kolor = models.ForeignKey("Kolor", related_name="zlecenie", on_delete=models.CASCADE, blank=True, null=True)
 
 
-# Konieć CZ1:
 class ZbioryDanych(models.Model):
     sesja = models.ForeignKey("Sesja", on_delete=models.CASCADE)
     uczacy = models.ManyToManyField("ObrazPoDostosowaniu", related_name="zbioryUczacy")
@@ -207,19 +208,16 @@ class ParametryUczenia(models.Model):
     saveStep = models.IntegerField(default=500, blank=True, null=True)
     epochSize = models.IntegerField(default=50, blank=True, null=True)
     modelSieci = models.ForeignKey("Sieci", on_delete=models.CASCADE)
-    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True) #pozostalosc po starym
+    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True)  # pozostalosc po starym
     opisUczeniaJSON = models.TextField(default="", blank=True)
 
 
-class AktualneWyniki(
-    models.Model):  # używane przez CRONa głównego backendu do śledzenia uczenia sieci bez potrzeby kounikacji
+class AktualneWyniki(models.Model):
     data = models.DateTimeField(default=timezone.now)
     status = models.TextField(default="")
 
 
-class Uczenie(
-    models.Model):  # na tej podstawie CRON backendu machinelearning rozpoznaje kiedy się uczyć i jak (z danych i parsowania xml)
-
+class Uczenie(models.Model):
     STATUS_UCZENIA = (
         ('N', 'do nauczania'),
         ('T', 'w trakcie'),
@@ -229,7 +227,6 @@ class Uczenie(
     opis = models.TextField(blank=True, null=True)
     wynik = models.OneToOneField("WynikUczenia", related_name="learn", blank=True, null=True, on_delete=models.CASCADE)
     parametry = models.ForeignKey("ParametryUczenia", on_delete=models.CASCADE)
-    # kolor = models.ForeignKey("Kolor", related_name="uczenie", on_delete=models.CASCADE, blank=True, null=True)
     zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True)
 
 
@@ -257,13 +254,13 @@ class WynikPrzetwarzania(models.Model):
     nazwa = models.CharField("nazwa", max_length=80, default="")
 
 
-# koniecCZ2
-
 class Sesja(models.Model):
     folderZObrazami = models.OneToOneField("FolderZObrazami", on_delete=models.CASCADE)
     filmyPrzetworzone = models.ManyToManyField("Film", related_name="sesjaPrzetworzone", blank=True)
     filmyUzytkownik = models.ManyToManyField("Film", related_name="sesjaUzytkownika", blank=True)
-    folderPrzetworzone = models.OneToOneField("FoldeZPrzetworzonymiObrazami", on_delete=models.CASCADE, blank=True, null=True)
+    folderPrzetworzone = models.OneToOneField("FoldeZPrzetworzonymiObrazami", on_delete=models.CASCADE, blank=True,
+                                              null=True)
+
     folderModele = models.OneToOneField("FolderModele", on_delete=models.CASCADE, blank=True, null=True)
     data = models.DateTimeField(default=timezone.now)
     nazwa = models.TextField(default="Nienazwana_{}".format(timezone.now()))

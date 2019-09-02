@@ -2,9 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from typing import List
-from django.http import Http404, HttpResponseServerError, HttpResponseBadRequest
-from pathlib import Path
-from mainServer.skryptyEtapy.helpersMethod import *
+from mainServer.stages.helpersMethod import *
 import json
 import os
 from functools import reduce
@@ -28,7 +26,8 @@ class DivideIntoSets(View):
 
         return JsonResponse({"dataSetId": dataSetObjectPk})
 
-    def divideImagesIntoSets(self, sessionId, dataSetsRatios):
+    @staticmethod
+    def divideImagesIntoSets(sessionId, dataSetsRatios):
         try:
             allImagesObjects = ObrazPoDostosowaniu.objects.filter(
                 klatkaMacierzysta__film__sesja_id=sessionId,
@@ -77,11 +76,11 @@ class Learn(View):
     def get(self, request, **kwargs):
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
-            self.sessionObject = learnObject.zbiory.sesja
+            sessionObject = learnObject.zbiory.sesja
 
-            parameters = self._parametersToDict(learnObject)
+            parameters = self._parametersToDict(learnObject, sessionObject)
             model_path = self._createModelPath(learnObject)
-            sets = self._setsData(learnObject)
+            sets = self._setsData(learnObject, sessionObject)
 
             responseData = {
                 "sets": sets,
@@ -95,7 +94,8 @@ class Learn(View):
 
         return JsonResponse(responseData)
 
-    def _addLearnObject(self, description, parametersId, dataSetId):
+    @staticmethod
+    def _addLearnObject(description, parametersId, dataSetId):
         learnObject = Uczenie.objects.create(opis=description, parametry_id=parametersId, zbiory_id=dataSetId)
         return learnObject.pk
 
@@ -106,29 +106,36 @@ class Learn(View):
         modelPath.mkdir(parents=True, exist_ok=True)
         return str(modelPath)
 
-    def _setData(self, set):  # TODO: ogarnać
+    @classmethod
+    def _setData(cls, color_set, sessionObject):
         setPathsWithPositionsJson = []
-        for imgObject in set.iterator():
+        for imgObject in color_set.iterator():
             path = imgObject.getPath()
             positions = json.loads(imgObject.pozycja.json.replace("'", "\"").replace("None", "null"))
-            # positions = json.loads(imgObject.pozycja.json) #TODO: only because of fixed bug in stage3, remove in future!
+            # positions = json.loads(imgObject.pozycja.json) TODO:only because of fixed bug in stage3, remove in future!
 
-            # TODO: Do something to ensure we have all points specified (its just walkaround)
-            positions = self.complainPositionSet(positions, self.sessionObject)
+            # TODO: Do something to ensure we have all points specified (its just walk around)
+            positions = cls.fillPositionSet(positions, sessionObject)
             setPathsWithPositionsJson.append({"path": path, "positions": positions})
 
         return setPathsWithPositionsJson
 
-    def _setsData(self, learnObject):
+    @classmethod
+    def _setsData(cls, learnObject, sessionObject):
         setsData = {
-            "train_data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory)),
-            "validation_data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryWalidacyjny=learnObject.zbiory)),
-            "test_data": self._setData(ObrazPoDostosowaniu.objects.filter(zbioryTestowy=learnObject.zbiory)),
+            "train_data": cls._setData(ObrazPoDostosowaniu.objects.filter(zbioryUczacy=learnObject.zbiory),
+                                       sessionObject),
+
+            "validation_data": cls._setData(ObrazPoDostosowaniu.objects.filter(zbioryWalidacyjny=learnObject.zbiory),
+                                            sessionObject),
+
+            "test_data": cls._setData(ObrazPoDostosowaniu.objects.filter(zbioryTestowy=learnObject.zbiory),
+                                      sessionObject),
         }
         return setsData
 
     @classmethod
-    def complainPositionSet(cls, positions: dict, sessionObject: Sesja):
+    def fillPositionSet(cls, positions: dict, sessionObject: Sesja):
         for color in cls.sessionColorsTags(sessionObject):
             if color not in positions:
                 positions[color] = None
@@ -145,21 +152,22 @@ class Learn(View):
     def sessionColorsTags(sessionObject: Sesja) -> List[str]:
         return [colorObject.nazwa for colorObject in sessionObject.zbiorKolorow.kolory.iterator()]
 
-    def _parametersToDict(self, learnObject):
+    @classmethod
+    def _parametersToDict(cls, learnObject, sessionObject):
         parameters = learnObject.parametry
 
         return {  # nie zmieniac kluczy gdyz uzywane później(learnResponse) jako **kwargs dla funkcji
-            "learning_rate": self.getParameter(parameters, "learning_rate"),
-            "batch_size": self.getParameter(parameters, "batch_size"),
-            "dropout": self.getParameter(parameters, "dropout"),
-            "training_iters": self.getParameter(parameters, "iloscIteracji"),
-            "epoch_size": self.getParameter(parameters, "epochSize"),
-            "save_step": self.getParameter(parameters, "saveStep"),
-            "network": self.getParameter(parameters.modelSieci, "opisJSON"),
-            "img_size_x": self.getParameter(parameters.modelSieci, "inputSizeX"),
-            "img_size_y": self.getParameter(parameters.modelSieci, "inputSizeY"),
-            "others": self.getParameter(parameters, "opisUczeniaJSON"),
-            "tags": self.sessionColorsTags(self.sessionObject)
+            "learning_rate": cls.getParameter(parameters, "learning_rate"),
+            "batch_size": cls.getParameter(parameters, "batch_size"),
+            "dropout": cls.getParameter(parameters, "dropout"),
+            "training_iters": cls.getParameter(parameters, "iloscIteracji"),
+            "epoch_size": cls.getParameter(parameters, "epochSize"),
+            "save_step": cls.getParameter(parameters, "saveStep"),
+            "network": cls.getParameter(parameters.modelSieci, "opisJSON"),
+            "img_size_x": cls.getParameter(parameters.modelSieci, "inputSizeX"),
+            "img_size_y": cls.getParameter(parameters.modelSieci, "inputSizeY"),
+            "others": cls.getParameter(parameters, "opisUczeniaJSON"),
+            "tags": cls.sessionColorsTags(sessionObject)
         }
 
 

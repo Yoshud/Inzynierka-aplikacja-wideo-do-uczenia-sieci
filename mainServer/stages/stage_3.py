@@ -4,10 +4,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.http import Http404, HttpResponseServerError
-from mainServer.skryptyEtapy.helpersMethod import *
+from mainServer.stages.helpersMethod import *
 import json
-import os
 from ModelML.optimizerMethod import *
 from ModelML.lossMethod import *
 
@@ -29,7 +27,6 @@ class DataAugmentationOrder(View):
         isFlipVertical = 1 if data["isFlipVertical"] else 0
         isFlipHorizontal = 1 if data["isFlipHorizontal"] else 0
         numberOfRandomCrops = int(data["numberOfRandomCrops"])
-
 
         if numberOfRandomCrops > 10:
             numberOfRandomCrops = 9
@@ -73,14 +70,16 @@ class DataAugmentationOrder(View):
 
         return orderDict
 
-    def getMovieFrames(self, movieId):
+    @staticmethod
+    def getMovieFrames(movieId):
         frames = Klatka.objects.filter(
             film__pk=movieId,
             pozycja__status__status__in=[interpolatedPositonStatus]
         ).distinct()
         return frames
 
-    def addOrder(self, frame, dataAugmentationCode, dataAugmentationFolder):
+    @staticmethod
+    def addOrder(frame, dataAugmentationCode, dataAugmentationFolder):
         augmentationOrderCountForFrame = ZlecenieAugmentacji.objects \
             .filter(klatka=frame) \
             .count()
@@ -94,7 +93,8 @@ class DataAugmentationOrder(View):
                 folder=dataAugmentationFolder,
             )
 
-    def getInterpolatedAndNoObjectPositionsOr404(self, frame):
+    @staticmethod
+    def getInterpolatedAndNoObjectPositionsOr404(frame):
         try:
             return PozycjaPunktu.objects.filter(
                 klatka=frame,
@@ -123,7 +123,8 @@ class ImageAfterDataAugmentation(JsonView):
     def get_method(self):
         pass
 
-    def addImage(self, pointPositions, cropPosition, frameId, imageName, methodCode, orderId):
+    @staticmethod
+    def addImage(pointPositions, cropPosition, frameId, imageName, methodCode, orderId):
         cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
         image = ObrazPoDostosowaniu.objects.create(
             pozycjaCropa=cropPositionObject,
@@ -193,32 +194,43 @@ class AugmentationProcessStatus(JsonView):
     def post_method(self):
         pass
 
-    def _movieAugmentationStatus(self, movie):
+    @classmethod
+    def _movieAugmentationStatus(cls, movie):
         frames = Klatka.objects.filter(film=movie, pozycja__status__status=interpolatedPositonStatus)
         frameOrderDict = defaultdict(lambda: defaultdict(list))
         for frame in frames:
-            self.addFrame(frame, frameOrderDict)
-        a = {str(size): self.movieProcessedStatus(framesDict, size) for size, framesDict in frameOrderDict.items()}
+            cls.addFrame(frame, frameOrderDict)
+        a = {str(size): cls.movieProcessedStatus(framesDict, size) for size, framesDict in frameOrderDict.items()}
         return a
 
-    def addFrame(self, frame, frameOrderDict):
+    @staticmethod
+    def addFrame(frame, frameOrderDict):
         orders = ZlecenieAugmentacji.objects.filter(klatka=frame)
         for order in orders:
             frameOrderDict[(order.oczekiwanyRozmiarX, order.oczekiwanyRozmiarY)][frame].append(order.kodAugmentacji)
 
-    def movieProcessedStatus(self, framesDict, size):
+    @classmethod
+    def movieProcessedStatus(cls, framesDict, size):
         numberOfProcessedFrames = sum(
-            [int(self.isFrameProcessed(frame, augmentationCodes, size)) for frame, augmentationCodes in framesDict.items()]
+            [
+                int(cls.isFrameProcessed(frame, augmentationCodes, size))
+                for frame, augmentationCodes in framesDict.items()
+            ]
         )
         return numberOfProcessedFrames / len(framesDict.values())
 
-    def isFrameProcessed(self, frame, augmentationCodes, size):
-        expectedNumberOfImages = sum(map(self.numberOfImagesAfterAugmentation, augmentationCodes))
+    @classmethod
+    def isFrameProcessed(cls, frame, augmentationCodes, size):
+        expectedNumberOfImages = sum(map(cls.numberOfImagesAfterAugmentation, augmentationCodes))
         numberOfImages = ObrazPoDostosowaniu.objects \
-            .filter(klatkaMacierzysta=frame, zlecenie__oczekiwanyRozmiarX=size[0], zlecenie__oczekiwanyRozmiarY=size[1])\
+            .filter(klatkaMacierzysta=frame,
+                    zlecenie__oczekiwanyRozmiarX=size[0],
+                    zlecenie__oczekiwanyRozmiarY=size[1])\
             .count()
+
         return expectedNumberOfImages == numberOfImages
 
-    def numberOfImagesAfterAugmentation(self, augmentationCode):
+    @staticmethod
+    def numberOfImagesAfterAugmentation(augmentationCode):
         augmentationCode = str(augmentationCode)
         return (1 + int(augmentationCode[1]) + int(augmentationCode[2])) * int(augmentationCode[3])
