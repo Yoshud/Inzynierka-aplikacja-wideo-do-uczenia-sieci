@@ -2,6 +2,7 @@ import json
 from abc import ABC, abstractmethod
 from functools import wraps
 from django.http import HttpResponseServerError
+from django.http import HttpResponse
 
 from django.http import HttpResponseBadRequest
 from django.views import View
@@ -9,6 +10,9 @@ from django.views import View
 
 class JsonViewException(Exception):
     def __init__(self, errorClass):
+        if not isinstance(errorClass, HttpResponse):
+            raise AssertionError("errorClass should inherit django.http.HttpResponse")
+
         self.errorClass = errorClass
 
 
@@ -60,7 +64,7 @@ class JsonView(View, ABC):
         else:
             return self._request.GET.get(key, default)
 
-    def _get_data_or_error(self, key, error=HttpResponseBadRequest):
+    def _get_data_or_error(self, key, error=HttpResponseBadRequest()):
         if self._data:
             if key in self._data:
                 return self._data[key]
