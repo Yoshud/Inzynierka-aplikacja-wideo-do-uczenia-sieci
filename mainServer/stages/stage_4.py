@@ -2,65 +2,59 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import HttpResponseBadRequest
-from django.http import HttpResponseServerError
 from django.views import View
 
 from typing import List
 import json
-from functools import reduce
-import numpy as np
 
+from lossMethod import lossMethodDict
 from mainServer.stages.JsonView import JsonView
 from mainServer.stages.auxiliaryMethods import *
+from optimizerMethod import optimizeMethodDict
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DivideIntoSets(View):
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        try:
-            dataSetsRatios = data["dataSetRatios"]
-            sessionId = data["sessionId"]
-        except:
-            raise HttpResponseBadRequest
+class NeuralNetworks(View):
+    def get(self, request, **kwargs):
+        networks = Sieci.objects.all()
+        responseDict = {
+            "networks": [self.networkToDict(network) for network in networks]
+        }
 
-        if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
-            raise HttpResponseBadRequest
+        return JsonResponse(responseDict)
 
-        dataSetObjectPk = self.divideImagesIntoSets(sessionId, dataSetsRatios)
+    @classmethod
+    def networkToDict(cls, network):
+        return {
+            "x": network.inputSizeX,
+            "y": network.inputSizeY,
+            "name": "Network nr. {}".format(network.pk),
+            "id": network.pk,
+            "description": network.opisJSON
+        }
 
-        return JsonResponse({"dataSetId": dataSetObjectPk})
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ParametersMethodsArguments(View):
+    def get(self, request, **kwargs):
+        return JsonResponse({
+            "loss": self.lossMethodParameters(),
+            "optimize": self.optymizeMethodParameters(),
+        })
 
     @staticmethod
-    def divideImagesIntoSets(sessionId, dataSetsRatios):
-        try:
-            allImagesObjects = ObrazPoDostosowaniu.objects.filter(
-                klatkaMacierzysta__film__sesja_id=sessionId,
-            )
-            allImagesObjects = np.random.permutation(allImagesObjects)
+    def optymizeMethodParameters():
+        return {
+            key: {"requirements": methodObject.requirements, "optional": methodObject.optional}
+            for key, methodObject in optimizeMethodDict.items()
+        }
 
-            def tmpFun(imagesAndRatioBefore, ratioAct):
-                ratioEnd = ratioAct + imagesAndRatioBefore[1]
-                start = int(len(allImagesObjects) * imagesAndRatioBefore[1])
-                end = int(len(allImagesObjects) * ratioEnd)
-                imagesAndRatioBefore[0].append(allImagesObjects[start:end])
-                return imagesAndRatioBefore[0], ratioEnd
-
-            dataSetsContent = reduce(tmpFun, dataSetsRatios, [[], 0.0])[0]
-        except:
-            raise Http404
-        try:
-            dataSetObject = ZbioryDanych.objects.create(sesja_id=sessionId)
-            objectDataSets = [dataSetObject.uczacy, dataSetObject.testowy, dataSetObject.walidacyjny]
-
-            for dataSetContent, dataSetField in zip(dataSetsContent, objectDataSets):
-                dataSetField.add(*dataSetContent)
-
-            dataSetObject.save()
-        except:
-            raise HttpResponseServerError
-
-        return dataSetObject.pk
+    @staticmethod
+    def lossMethodParameters():
+        return {
+            key: {"parameters": methodObject.parameters}
+            for key, methodObject in lossMethodDict.items()
+        }
 
 
 @method_decorator(csrf_exempt, name='dispatch')

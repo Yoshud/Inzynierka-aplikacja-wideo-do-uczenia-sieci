@@ -1,7 +1,9 @@
 from collections import defaultdict
+from functools import reduce
 
+import numpy as np
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -10,8 +12,6 @@ from django.http import HttpResponseServerError
 from mainServer.stages.JsonView import JsonView
 from mainServer.stages.auxiliaryMethods import *
 import json
-from ModelML.optimizerMethod import *
-from ModelML.lossMethod import *
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -110,6 +110,7 @@ class DataAugmentationOrder(View):
             return HttpResponseServerError
 
 
+# internal
 @method_decorator(csrf_exempt, name='dispatch')
 class ImageAfterDataAugmentation(JsonView):
     def post_method(self):
@@ -144,47 +145,52 @@ class ImageAfterDataAugmentation(JsonView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class NeuralNetworks(View):
-    def get(self, request, **kwargs):
-        networks = Sieci.objects.all()
-        responseDict = {
-            "networks": [self.networkToDict(network) for network in networks]
-        }
+class DivideIntoSets(View):
+    def post(self, request, **kwargs):
+        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
+        try:
+            dataSetsRatios = data["dataSetRatios"]
+            sessionId = data["sessionId"]
+        except:
+            raise HttpResponseBadRequest
 
-        return JsonResponse(responseDict)
+        if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
+            raise HttpResponseBadRequest
 
-    @classmethod
-    def networkToDict(cls, network):
-        return {
-            "x": network.inputSizeX,
-            "y": network.inputSizeY,
-            "name": "Network nr. {}".format(network.pk),
-            "id": network.pk,
-            "description": network.opisJSON
-        }
+        dataSetObjectPk = self.divideImagesIntoSets(sessionId, dataSetsRatios)
 
-
-@method_decorator(csrf_exempt, name='dispatch')
-class ParametersMethodsArguments(View):
-    def get(self, request, **kwargs):
-        return JsonResponse({
-            "loss": self.lossMethodParameters(),
-            "optimize": self.optymizeMethodParameters(),
-        })
+        return JsonResponse({"dataSetId": dataSetObjectPk})
 
     @staticmethod
-    def optymizeMethodParameters():
-        return {
-            key: {"requirements": methodObject.requirements, "optional": methodObject.optional}
-            for key, methodObject in optimizeMethodDict.items()
-        }
+    def divideImagesIntoSets(sessionId, dataSetsRatios):
+        try:
+            allImagesObjects = ObrazPoDostosowaniu.objects.filter(
+                klatkaMacierzysta__film__sesja_id=sessionId,
+            )
+            allImagesObjects = np.random.permutation(allImagesObjects)
 
-    @staticmethod
-    def lossMethodParameters():
-        return {
-            key: {"parameters": methodObject.parameters}
-            for key, methodObject in lossMethodDict.items()
-        }
+            def tmpFun(imagesAndRatioBefore, ratioAct):
+                ratioEnd = ratioAct + imagesAndRatioBefore[1]
+                start = int(len(allImagesObjects) * imagesAndRatioBefore[1])
+                end = int(len(allImagesObjects) * ratioEnd)
+                imagesAndRatioBefore[0].append(allImagesObjects[start:end])
+                return imagesAndRatioBefore[0], ratioEnd
+
+            dataSetsContent = reduce(tmpFun, dataSetsRatios, [[], 0.0])[0]
+        except:
+            raise Http404
+        try:
+            dataSetObject = ZbioryDanych.objects.create(sesja_id=sessionId)
+            objectDataSets = [dataSetObject.uczacy, dataSetObject.testowy, dataSetObject.walidacyjny]
+
+            for dataSetContent, dataSetField in zip(dataSetsContent, objectDataSets):
+                dataSetField.add(*dataSetContent)
+
+            dataSetObject.save()
+        except:
+            raise HttpResponseServerError
+
+        return dataSetObject.pk
 
 
 @method_decorator(csrf_exempt, name='dispatch')

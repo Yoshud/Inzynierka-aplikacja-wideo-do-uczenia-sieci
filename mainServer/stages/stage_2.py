@@ -15,15 +15,37 @@ from functools import reduce
 from django.core.exceptions import ObjectDoesNotExist
 
 
+# internal
 @method_decorator(csrf_exempt, name='dispatch')
-class ReturnMoviesToProcess(View):
-    def get(self, request, **kwargs):
+class ProcessMovie(JsonView):
+    def post_method(self):
+        movieId = self._get_data("movieId", False)
+        frames = self._get_data("frames")
+        try:
+            self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
+        except:
+            raise HttpResponseServerError
+        return JsonResponse({"ok": True})
+
+    def get_method(self):
         movies = Film.objects \
                      .filter(status__status__in=["Do przetworzenia"])[:5]
         moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
         return JsonResponse({
             "movies": moviesDict,
         })
+
+    @staticmethod
+    def addToProcessedMovies(movie, frames,
+                             statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
+                             statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
+        movie.status.remove(statusToRemove)
+        movie.status.add(statusToAdd)
+        for frameInfo in frames:
+            frame = Klatka(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie)
+            frame.save()
+
+        print(movie.nazwa)
 
     @staticmethod
     def addMovieToMoviesDict(movie,
@@ -37,33 +59,6 @@ class ReturnMoviesToProcess(View):
             "id": movie.pk,
             "pathToSave": movie.sesja.folderZObrazami.getPath(),
         }
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-class MovieProcessed(JsonView):
-    def post_method(self):
-        movieId = self._get_data("movieId", False)
-        frames = self._get_data("frames")
-        try:
-            self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
-        except:
-            raise HttpResponseServerError
-        return JsonResponse({"ok": True})
-
-    def get_method(self):
-        pass
-
-    @staticmethod
-    def addToProcessedMovies(movie, frames,
-                             statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
-                             statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
-        movie.status.remove(statusToRemove)
-        movie.status.add(statusToAdd)
-        for frameInfo in frames:
-            frame = Klatka(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie)
-            frame.save()
-
-        print(movie.nazwa)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -111,7 +106,6 @@ class GetNextMovie(JsonView):
 @method_decorator(csrf_exempt, name='dispatch')
 class GetFrame(JsonView):
     def post_method(self):
-        # data = json.loads(request.read().decode('utf-8'))
         movieId = self._get_data_or_error("movieId")
         frameNr = self._get_data_or_error("frameNr")
         imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).getPath()

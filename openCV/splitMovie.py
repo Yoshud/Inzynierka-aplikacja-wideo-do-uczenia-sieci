@@ -5,8 +5,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
 from internalConnection.InternalConnection import InternalConnection
 
-url = "http://localhost:8000/returnMoviesToProcess"
-urlResponse = "http://localhost:8000/movieProcessed"
+url = "http://localhost:8000/processMovie"
+urlResponse = "http://localhost:8000/processMovie"
 connection = InternalConnection(url, urlResponse)
 
 
