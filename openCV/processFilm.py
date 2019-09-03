@@ -10,9 +10,7 @@ def process(path, pathToSave, movieName, movieId):
 
     movieNameAndSufix = movieName.split('.')
     filePrefix = "{}_{}".format(movieNameAndSufix[0], movieId)
-    # movieSufix = movieNameAndSufix[-1]
     imageSufix = "png"
-    # pathToSave = os.path.join(pathToSave, filePrefix).replace('\\', '/')
     cap = cv2.VideoCapture(path.replace('\\', '/'))
     fps = cap.get(cv2.CAP_PROP_FPS)
     print("fps: {}".format(fps))
@@ -21,7 +19,6 @@ def process(path, pathToSave, movieName, movieId):
         ret, frame = cap.read()
         if ret != False:
             fullFrameName = "{}_f{}.{}".format(filePrefix, it, imageSufix)
-            # fullPathToSave = "{}_f{}.{}".format(pathToSave, it, imageSufix)
             fullPathToSave = os.path.join(pathToSave, fullFrameName).replace('\\', '/').replace(' ', '_')
             try:
                 cv2.imwrite(fullPathToSave, frame, [cv2.IMWRITE_PNG_COMPRESSION, 0])
