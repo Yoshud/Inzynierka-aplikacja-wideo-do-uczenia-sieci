@@ -11,7 +11,7 @@ from functools import reduce
 import numpy as np
 
 from mainServer.stages.JsonView import JsonView
-from mainServer.stages.helpersMethod import *
+from mainServer.stages.auxiliaryMethods import *
 
 
 @method_decorator(csrf_exempt, name='dispatch')

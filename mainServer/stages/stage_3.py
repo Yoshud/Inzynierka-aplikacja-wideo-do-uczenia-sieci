@@ -8,7 +8,7 @@ from django.views import View
 from django.http import HttpResponseServerError
 
 from mainServer.stages.JsonView import JsonView
-from mainServer.stages.helpersMethod import *
+from mainServer.stages.auxiliaryMethods import *
 import json
 from ModelML.optimizerMethod import *
 from ModelML.lossMethod import *

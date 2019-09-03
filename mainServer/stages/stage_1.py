@@ -5,7 +5,7 @@ from django.http import HttpResponseBadRequest
 from django.views import View
 
 from mainServer.stages.JsonView import JsonView
-from mainServer.stages.helpersMethod import *
+from mainServer.stages.auxiliaryMethods import *
 import cv2
 import datetime
 from mainServer.models import *

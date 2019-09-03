@@ -7,7 +7,7 @@ from django.http import HttpResponseServerError
 from django.views import View
 
 from mainServer.stages.JsonView import JsonView
-from mainServer.stages.helpersMethod import *
+from mainServer.stages.auxiliaryMethods import *
 from django.http import HttpResponse
 from scipy.interpolate import interp1d
 import json
