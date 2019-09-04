@@ -2,9 +2,7 @@ from django.http import JsonResponse, HttpResponseServerError
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import HttpResponseBadRequest
-from django.views import View
 
-from mainServer.models import Film, StatusFilmu, Klatka
 from mainServer.stages.JsonView import JsonView
 from mainServer.stages.auxiliaryMethods import *
 import cv2
@@ -16,13 +14,12 @@ import shutil
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class PathObjects(View):
-    def get(self, request, **kwargs):
-        path = request.GET.get('path', None)
-        parent = request.GET.get('parent', None)
-        child = request.GET.get('child', '')
-        if path is None:
-            raise HttpResponseBadRequest
+class PathObjects(JsonView):
+    def get_method(self):
+        path = self._get_data_or_error('path')
+        parent = self._get_data('parent', allow_empty_value=True)
+        child = self._get_data('child', '')
+
         if parent is not None:
             path = pathUp(path)
         else:
@@ -216,8 +213,8 @@ class ProcessMovie(JsonView):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         for frameInfo in frames:
-            frame = Klatka.objects.update_or_create(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie,
-                                                    defaults=dict(nazwa=frameInfo["name"], nr=frameInfo["nr"]))
+            Klatka.objects.update_or_create(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie,
+                                            defaults=dict(nazwa=frameInfo["name"], nr=frameInfo["nr"]))
 
         print(movie.nazwa)
 

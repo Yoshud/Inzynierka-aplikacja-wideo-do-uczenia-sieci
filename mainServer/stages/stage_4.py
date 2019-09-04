@@ -1,7 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.http import HttpResponseBadRequest
 from django.views import View
 
 from typing import List
@@ -58,21 +57,15 @@ class ParametersMethodsArguments(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class Learn(View):
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-
-        description = data["describtion"] if "describtion" in data else None
-
-        try:
-            parametersId = data["parametersId"]
-            dataSetId = data["dataSetId"]
-        except:
-            raise HttpResponseBadRequest
+class Learn(JsonView):
+    def post_method(self):
+        description = self._get_data('description')
+        parametersId = self._get_data_or_error('parametersId')
+        dataSetId = self._get_data_or_error('dataSetId')
 
         return JsonResponse({"learnObjectId": self._addLearnObject(description, parametersId, dataSetId)})
 
-    def get(self, request, **kwargs):
+    def get_method(self):
         try:
             learnObject = Uczenie.objects.filter(statusNauki='N')[0]
             sessionObject = learnObject.zbiory.sesja

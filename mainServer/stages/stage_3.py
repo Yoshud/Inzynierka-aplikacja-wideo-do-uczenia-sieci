@@ -142,14 +142,10 @@ class ImageAfterDataAugmentation(JsonView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DivideIntoSets(View):
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        try:
-            dataSetsRatios = data["dataSetRatios"]
-            sessionId = data["sessionId"]
-        except:
-            raise HttpResponseBadRequest
+class DivideIntoSets(JsonView):
+    def post_method(self):
+        dataSetsRatios = self._get_data_or_error("dataSetRatios")
+        sessionId = self._get_data_or_error("sessionId")
 
         if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
             raise HttpResponseBadRequest
