@@ -3,7 +3,6 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import HttpResponseBadRequest
-from django.http import HttpResponseServerError
 from django.views import View
 
 from mainServer.stages.JsonView import JsonView
@@ -15,55 +14,9 @@ from functools import reduce
 from django.core.exceptions import ObjectDoesNotExist
 
 
-# internal
 @method_decorator(csrf_exempt, name='dispatch')
-class ProcessMovie(JsonView):
-    def post_method(self):
-        movieId = self._get_data("movieId", False)
-        frames = self._get_data("frames")
-        try:
-            self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
-        except:
-            raise HttpResponseServerError
-        return JsonResponse({"ok": True})
-
+class NextMovie(JsonView):
     def get_method(self):
-        movies = Film.objects \
-                     .filter(status__status__in=["Do przetworzenia"])[:5]
-        moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
-        return JsonResponse({
-            "movies": moviesDict,
-        })
-
-    @staticmethod
-    def addToProcessedMovies(movie, frames,
-                             statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
-                             statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
-        movie.status.remove(statusToRemove)
-        movie.status.add(statusToAdd)
-        for frameInfo in frames:
-            frame = Klatka(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie)
-            frame.save()
-
-        print(movie.nazwa)
-
-    @staticmethod
-    def addMovieToMoviesDict(movie,
-                             statusToRemove=StatusFilmu.objects.get(status="Do przetworzenia"),
-                             statusToAdd=StatusFilmu.objects.get(status="W trakcie przetwarzania")):
-        movie.status.remove(statusToRemove)
-        movie.status.add(statusToAdd)
-        return {
-            "path": movie.sciezka,
-            "movieName": movie.nazwa,
-            "id": movie.pk,
-            "pathToSave": movie.sesja.folderZObrazami.getPath(),
-        }
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-class GetNextMovie(JsonView):
-    def post_method(self):
         sessionId = self._get_data_or_error("sessionId")
 
         previousMovieId = self._get_data("previousMovieId", None)
@@ -99,13 +52,13 @@ class GetNextMovie(JsonView):
             "y": nextMovie.rozmiarY,
         })
 
-    def get_method(self):
+    def post_method(self):
         pass
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GetFrame(JsonView):
-    def post_method(self):
+class Frame(JsonView):
+    def get_method(self):
         movieId = self._get_data_or_error("movieId")
         frameNr = self._get_data_or_error("frameNr")
         imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).getPath()
@@ -113,7 +66,7 @@ class GetFrame(JsonView):
         response = HttpResponse(wrapper, content_type='image/png')
         return response
 
-    def get_method(self):
+    def post_method(self):
         pass
 
 

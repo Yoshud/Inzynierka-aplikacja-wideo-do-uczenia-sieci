@@ -55,14 +55,21 @@ class JsonView(View, ABC):
         self._request = request
         return self.post_method()
 
-    def _get_data(self, key, default=None):
+    def _get_data(self, key, default=None, allow_empty_value=False):
         if self._data:
             try:
-                return self._data[key]
+                return self._data[key] if allow_empty_value else self._data[key] if self._data[key] != '' else default
             except KeyError:
                 return default
         else:
-            return self._request.GET.get(key, default)
+            if allow_empty_value:
+                return self._request.GET.get(key, default)
+            else:
+                ret = self._request.GET.get(key, default)
+                if ret == '':
+                    ret = default
+
+                return ret
 
     def _get_data_or_error(self, key, error=HttpResponseBadRequest()):
         if self._data:

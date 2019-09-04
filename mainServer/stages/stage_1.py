@@ -1,9 +1,10 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseServerError
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import HttpResponseBadRequest
 from django.views import View
 
+from mainServer.models import Film, StatusFilmu, Klatka
 from mainServer.stages.JsonView import JsonView
 from mainServer.stages.auxiliaryMethods import *
 import cv2
@@ -15,7 +16,7 @@ import shutil
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GetObjectsFromPath(View):
+class PathObjects(View):
     def get(self, request, **kwargs):
         path = request.GET.get('path', None)
         parent = request.GET.get('parent', None)
@@ -36,7 +37,7 @@ class GetObjectsFromPath(View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class AddMovie(JsonView):
+class Movies(JsonView):
     def get_method(self):
         path = self._get_data('path')
         cap = cv2.VideoCapture(path)
@@ -186,3 +187,49 @@ class AddMovie(JsonView):
             cls.addMovie(sessionPK, os.path.join(path, file))
 
         cls.addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)
+
+
+# internal
+@method_decorator(csrf_exempt, name='dispatch')
+class ProcessMovie(JsonView):
+    def post_method(self):
+        movieId = self._get_data("movieId", False)
+        frames = self._get_data("frames")
+        try:
+            self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
+        except:
+            raise HttpResponseServerError
+        return JsonResponse({"ok": True})
+
+    def get_method(self):
+        movies = Film.objects \
+                     .filter(status__status__in=["Do przetworzenia"])[:5]
+        moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
+        return JsonResponse({
+            "movies": moviesDict,
+        })
+
+    @staticmethod
+    def addToProcessedMovies(movie, frames,
+                             statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
+                             statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
+        movie.status.remove(statusToRemove)
+        movie.status.add(statusToAdd)
+        for frameInfo in frames:
+            frame = Klatka.objects.update_or_create(nazwa=frameInfo["name"], nr=frameInfo["nr"], film=movie,
+                                                    defaults=dict(nazwa=frameInfo["name"], nr=frameInfo["nr"]))
+
+        print(movie.nazwa)
+
+    @staticmethod
+    def addMovieToMoviesDict(movie,
+                             statusToRemove=StatusFilmu.objects.get(status="Do przetworzenia"),
+                             statusToAdd=StatusFilmu.objects.get(status="W trakcie przetwarzania")):
+        movie.status.remove(statusToRemove)
+        movie.status.add(statusToAdd)
+        return {
+            "path": movie.sciezka,
+            "movieName": movie.nazwa,
+            "id": movie.pk,
+            "pathToSave": movie.sesja.folderZObrazami.getPath(),
+        }

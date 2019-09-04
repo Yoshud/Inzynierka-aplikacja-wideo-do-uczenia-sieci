@@ -4,11 +4,11 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('getObjectsFromPath', views.getObjectsFromPathView, name='getObjectsFromPath'),
-    path('addMovie', views.addMovieView, name='addMovie'),
+    path('pathObjects', views.pathObjectsView, name='pathObjects'),
+    path('movies', views.moviesView, name='movies'),
     path('processMovie', views.processMovieView, name='processMovie'),
-    path('getNextMovie', views.getNextMovieView, name='getNextMovie'),
-    path('getFrame', views.getFrameView, name='getFrame'),
+    path('nextMovie', views.nextMovieView, name='nextMovie'),
+    path('frame', views.frameView, name='frame'),
     path('framePositions', views.framePositionsView, name='framePositions'),
     path('deletePosition', views.deletePositionView, name='deletePosition'),
     path('dataAugmentationOrder', views.dataAugmentationOrderView, name='dataAugmentationOrder'),
