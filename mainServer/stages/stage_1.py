@@ -59,38 +59,44 @@ class Movies(JsonView):
         path = self.get_data_or_error("path")
         files = self.get_data("files")
         folders = self.get_data('folders')
-        sessionName = self.get_data('sessionName', 'autoName')
-        now = timezone.now()
 
-        sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
-        sessionPath = self.get_data('sessionPath', os.path.join(pathUp(currentPath()), 'Sesje'))
-        sessionPath = os.path.join(sessionPath, sessionName)
+        sessionId = self.get_data("sessionId")
+        if sessionId is None:
+            sessionName = self.get_data('sessionName', 'autoName')
+            now = timezone.now()
 
-        imageFolder = FolderZObrazami.objects.create(nazwa=imagesFolderName)
-        modelsFolder = FolderModele.objects.create(nazwa=modelsFolderName)
-        processedFolder = FoldeZPrzetworzonymiObrazami.objects.create(nazwa=processedFolderName)
+            sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
+            sessionPath = self.get_data('sessionPath', os.path.join(pathUp(currentPath()), 'Sesje'))
+            sessionPath = os.path.join(sessionPath, sessionName)
 
-        session = Sesja(
-            nazwa=sessionName,
-            sciezka=sessionPath,
-            folderZObrazami=imageFolder,
-            folderModele=modelsFolder,
-            folderPrzetworzone=processedFolder,
-            zbiorKolorow_id=ZbiorKolorow.objects.get(nazwa="Domyslny zestaw").pk
-        )
-        session.save()
+            imageFolder = FolderZObrazami.objects.create(nazwa=imagesFolderName)
+            modelsFolder = FolderModele.objects.create(nazwa=modelsFolderName)
+            processedFolder = FoldeZPrzetworzonymiObrazami.objects.create(nazwa=processedFolderName)
+
+            session = Sesja(
+                nazwa=sessionName,
+                sciezka=sessionPath,
+                folderZObrazami=imageFolder,
+                folderModele=modelsFolder,
+                folderPrzetworzone=processedFolder,
+                zbiorKolorow_id=ZbiorKolorow.objects.get(nazwa="Domyslny zestaw").pk
+            )
+            session.save()
+        else:
+            session = Sesja.objects.get(pk=sessionId)
+
         if files:
             for file in files:
-                self.addMovie(session.pk, os.path.join(path, file))
+                self._addMovie(session.pk, os.path.join(path, file))
         if folders:
             for folder in folders:
-                self.addFolder(session.pk, os.path.join(path, folder))
+                self._addFolder(session.pk, os.path.join(path, folder))
         return JsonResponse({
             'sessionId': session.pk
         })
 
     @staticmethod
-    def addMovie(sessionPK, path):
+    def _addMovie(sessionPK, path):
         cap = cv2.VideoCapture(path)
         if cap is None or not cap.isOpened():
             raise Http404
@@ -172,18 +178,18 @@ class Movies(JsonView):
             movie.status.add(status)
 
     @classmethod
-    def addMoviesFromImages(cls, imageFileNames, mainPath, sessionPK):
+    def _addMoviesFromImages(cls, imageFileNames, mainPath, sessionPK):
         imagesGroups = cls._groupImagesInMovies(imageFileNames)
         for imagesGroup in imagesGroups:
             cls._addMovieFromImageGroup(imagesGroup, mainPath, sessionPK)
 
     @classmethod
-    def addFolder(cls, sessionPK, path):
+    def _addFolder(cls, sessionPK, path):
         folders, files = foldersAndMovieFilesFromPath(path)
         for file in files:
-            cls.addMovie(sessionPK, os.path.join(path, file))
+            cls._addMovie(sessionPK, os.path.join(path, file))
 
-        cls.addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)
+        cls._addMoviesFromImages(*imagesFileNamesFromPath(path), sessionPK)
 
 
 # internal
@@ -193,7 +199,7 @@ class ProcessMovie(JsonView):
         movieId = self.get_data("movieId", False)
         frames = self.get_data("frames")
         try:
-            self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
+            self._addToProcessedMovies(Film.objects.get(pk=movieId), frames)
         except:
             raise HttpResponseServerError
         return JsonResponse({"ok": True})
@@ -201,15 +207,15 @@ class ProcessMovie(JsonView):
     def get_method(self):
         movies = Film.objects \
                      .filter(status__status__in=["Do przetworzenia"])[:5]
-        moviesDict = [self.addMovieToMoviesDict(movie) for movie in movies]
+        moviesDict = [self._addMovieToMoviesDict(movie) for movie in movies]
         return JsonResponse({
             "movies": moviesDict,
         })
 
     @staticmethod
-    def addToProcessedMovies(movie, frames,
-                             statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
-                             statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
+    def _addToProcessedMovies(movie, frames,
+                              statusToRemove=StatusFilmu.objects.get(status="W trakcie przetwarzania"),
+                              statusToAdd=StatusFilmu.objects.get(status="Przetworzono")):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         for frameInfo in frames:
@@ -219,9 +225,9 @@ class ProcessMovie(JsonView):
         print(movie.nazwa)
 
     @staticmethod
-    def addMovieToMoviesDict(movie,
-                             statusToRemove=StatusFilmu.objects.get(status="Do przetworzenia"),
-                             statusToAdd=StatusFilmu.objects.get(status="W trakcie przetwarzania")):
+    def _addMovieToMoviesDict(movie,
+                              statusToRemove=StatusFilmu.objects.get(status="Do przetworzenia"),
+                              statusToAdd=StatusFilmu.objects.get(status="W trakcie przetwarzania")):
         movie.status.remove(statusToRemove)
         movie.status.add(statusToAdd)
         return {
