@@ -52,9 +52,6 @@ class NextMovie(JsonView):
             "y": nextMovie.rozmiarY,
         })
 
-    def post_method(self):
-        pass
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class Frame(JsonView):
@@ -65,9 +62,6 @@ class Frame(JsonView):
         wrapper = base64.b64encode(open(imagePath, 'rb').read()).decode('utf-8')
         response = HttpResponse(wrapper, content_type='image/png')
         return response
-
-    def post_method(self):
-        pass
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -138,6 +132,19 @@ class FramePosition(View):
             self.addInterpolationPosition(frameObject, colorObject)
 
         return JsonResponse({"positionId": position[0].pk})
+
+    def delete(self, request, **kwargs):
+        try:
+            data = json.loads(request.read().decode('utf-8'))
+            positionId = data["positionId"]
+            positionObject = PozycjaPunktu.objects.get(pk=positionId)
+            deleted = positionObject.delete()
+            if deleted.count() != 0:
+                raise Http404
+        except:
+            raise Http404
+
+        return JsonResponse({"ok": "ok"})
 
     @staticmethod
     def _addPosition(color: str, status: str, frameObject, x: int = None, y: int = None):
@@ -301,19 +308,3 @@ class FramePosition(View):
 
         for frame in withoutPoint:
             cls._addPosition(colorObject, noObjectPositionStatus, frame)
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-class DeletePosition(View):
-    def post(self, request, **kwargs):
-        try:
-            data = json.loads(request.read().decode('utf-8'))
-            positionId = data["positionId"]
-            positionObject = PozycjaPunktu.objects.get(pk=positionId)
-            deleted = positionObject.delete()
-            if deleted.count() != 0:
-                raise Http404
-        except:
-            raise Http404
-
-        return JsonResponse({"ok": "ok"})

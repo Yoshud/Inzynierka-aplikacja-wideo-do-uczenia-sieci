@@ -1,5 +1,5 @@
 import json
-from abc import ABC, abstractmethod
+import inspect
 from functools import wraps
 from django.http import HttpResponseServerError
 from django.http import HttpResponse
@@ -29,31 +29,42 @@ def django_exceptions(view_func):
     return wrapper
 
 
-class JsonView(View, ABC):
+class JsonView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._data = None
         self._request = None
 
-    @abstractmethod
-    def post_method(self):
-        pass
-
-    @abstractmethod
-    def get_method(self):
-        pass
-
     @django_exceptions
     def get(self, request, **kwargs):
-        self._data = None
-        self._request = request
-        return self.get_method()
+        this_fun_name = inspect.currentframe().f_code.co_name
+        return self.run_method(this_fun_name, request, **kwargs)
 
     @django_exceptions
     def post(self, request, **kwargs):
-        self._data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        self._request = request
-        return self.post_method()
+        this_fun_name = inspect.currentframe().f_code.co_name
+        return self.run_method(this_fun_name, request, **kwargs)
+
+    @django_exceptions
+    def delete(self, request, **kwargs):
+        this_fun_name = inspect.currentframe().f_code.co_name
+        return self.run_method(this_fun_name, request, **kwargs)
+
+    @django_exceptions
+    def put(self, request, **kwargs):
+        this_fun_name = inspect.currentframe().f_code.co_name
+        return self.run_method(this_fun_name, request, **kwargs)
+
+    def run_method(self, fun_name: str, request, **kwargs):
+        if fun_name == 'get':
+            self._data = None
+            self._request = request
+        else:
+            self._data = json.loads(request.read().decode('utf-8').replace("'", "\""))
+            self._request = request
+
+        method_to_run = getattr(self, f"{fun_name}_method", lambda: self.http_method_not_allowed(request, **kwargs))
+        return method_to_run()
 
     def _get_data(self, key, default=None, allow_empty_value=False):
         if self._data:

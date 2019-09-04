@@ -10,7 +10,6 @@ urlpatterns = [
     path('nextMovie', views.nextMovieView, name='nextMovie'),
     path('frame', views.frameView, name='frame'),
     path('framePositions', views.framePositionsView, name='framePositions'),
-    path('deletePosition', views.deletePositionView, name='deletePosition'),
     path('dataAugmentationOrder', views.dataAugmentationOrderView, name='dataAugmentationOrder'),
     path('imageAfterDataAugmentation', views.imageAfterDataAugmentationView, name='imageAfterDataAugmentation'),
     path('divideIntoSets', views.divideIntoSetsView, name='divideIntoSets'),

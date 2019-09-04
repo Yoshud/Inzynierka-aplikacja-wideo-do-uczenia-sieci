@@ -125,9 +125,6 @@ class ImageAfterDataAugmentation(JsonView):
         self.addImage(pointPositions, cropPosition, frameId, imageName, methodCode, orderId)
         return JsonResponse({"ok": True})
 
-    def get_method(self):
-        pass
-
     @staticmethod
     def addImage(pointPositions, cropPosition, frameId, imageName, methodCode, orderId):
         cropPositionObject = PozycjaCropa.objects.create(x=int(cropPosition[0]), y=int(cropPosition[1]))
@@ -200,9 +197,6 @@ class AugmentationProcessStatus(JsonView):
         allSessionMovies = Film.objects.filter(sesja__pk=sessionId, status__status="Przypisano punkty")
         movieAugmentationStatuses = [self._movieAugmentationStatus(movie) for movie in allSessionMovies]
         return JsonResponse({"movies": movieAugmentationStatuses})
-
-    def post_method(self):
-        pass
 
     @classmethod
     def _movieAugmentationStatus(cls, movie):

@@ -20,7 +20,6 @@ processMovieView = mainServer.stages.stage_1.ProcessMovie.as_view()
 nextMovieView = stage_2.NextMovie.as_view()
 frameView = stage_2.Frame.as_view()
 framePositionsView = stage_2.FramePosition.as_view()
-deletePositionView = stage_2.DeletePosition.as_view()
 
 dataAugmentationOrderView = stage_3.DataAugmentationOrder.as_view()
 imageAfterDataAugmentationView = stage_3.ImageAfterDataAugmentation.as_view()

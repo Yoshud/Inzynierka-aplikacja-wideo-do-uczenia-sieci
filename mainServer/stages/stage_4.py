@@ -182,6 +182,3 @@ class LearnResults(JsonView):
         learn_object.save()
 
         return JsonResponse({"ok": True})
-
-    def get_method(self):
-        pass
