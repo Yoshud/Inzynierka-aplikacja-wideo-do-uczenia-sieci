@@ -115,12 +115,12 @@ class DataAugmentationOrder(View):
 class ImageAfterDataAugmentation(JsonView):
     def post_method(self):
 
-        pointPositions = self._get_data_or_error("pointPositions")
-        cropPosition = self._get_data_or_error("cropPosition")
-        frameId = self._get_data_or_error("frameId")
-        imageName = self._get_data_or_error("imageName")
-        methodCode = self._get_data_or_error("methodCode")
-        orderId = self._get_data_or_error("orderId")
+        pointPositions = self.get_data_or_error("pointPositions")
+        cropPosition = self.get_data_or_error("cropPosition")
+        frameId = self.get_data_or_error("frameId")
+        imageName = self.get_data_or_error("imageName")
+        methodCode = self.get_data_or_error("methodCode")
+        orderId = self.get_data_or_error("orderId")
 
         self.addImage(pointPositions, cropPosition, frameId, imageName, methodCode, orderId)
         return JsonResponse({"ok": True})
@@ -144,8 +144,8 @@ class ImageAfterDataAugmentation(JsonView):
 @method_decorator(csrf_exempt, name='dispatch')
 class DivideIntoSets(JsonView):
     def post_method(self):
-        dataSetsRatios = self._get_data_or_error("dataSetRatios")
-        sessionId = self._get_data_or_error("sessionId")
+        dataSetsRatios = self.get_data_or_error("dataSetRatios")
+        sessionId = self.get_data_or_error("sessionId")
 
         if sum(dataSetsRatios) != 1.0 or (0 > len(dataSetsRatios) > 3):
             raise HttpResponseBadRequest
@@ -189,7 +189,7 @@ class DivideIntoSets(JsonView):
 @method_decorator(csrf_exempt, name='dispatch')
 class AugmentationProcessStatus(JsonView):
     def get_method(self):
-        sessionId = self._get_data_or_error("sessionId")
+        sessionId = self.get_data_or_error("sessionId")
         allSessionMovies = Film.objects.filter(sesja__pk=sessionId, status__status="Przypisano punkty")
         movieAugmentationStatuses = [self._movieAugmentationStatus(movie) for movie in allSessionMovies]
         return JsonResponse({"movies": movieAugmentationStatuses})

@@ -59,9 +59,9 @@ class ParametersMethodsArguments(View):
 @method_decorator(csrf_exempt, name='dispatch')
 class Learn(JsonView):
     def post_method(self):
-        description = self._get_data('description')
-        parametersId = self._get_data_or_error('parametersId')
-        dataSetId = self._get_data_or_error('dataSetId')
+        description = self.get_data('description')
+        parametersId = self.get_data_or_error('parametersId')
+        dataSetId = self.get_data_or_error('dataSetId')
 
         return JsonResponse({"learnObjectId": self._addLearnObject(description, parametersId, dataSetId)})
 

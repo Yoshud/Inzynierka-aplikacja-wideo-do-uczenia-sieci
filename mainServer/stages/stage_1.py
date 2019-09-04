@@ -16,9 +16,9 @@ import shutil
 @method_decorator(csrf_exempt, name='dispatch')
 class PathObjects(JsonView):
     def get_method(self):
-        path = self._get_data_or_error('path')
-        parent = self._get_data('parent', allow_empty_value=True)
-        child = self._get_data('child', '')
+        path = self.get_data_or_error('path')
+        parent = self.get_data('parent', allow_empty_value=True)
+        child = self.get_data('child', '')
 
         if parent is not None:
             path = pathUp(path)
@@ -36,7 +36,7 @@ class PathObjects(JsonView):
 @method_decorator(csrf_exempt, name='dispatch')
 class Movies(JsonView):
     def get_method(self):
-        path = self._get_data('path')
+        path = self.get_data_or_error('path')
         cap = cv2.VideoCapture(path)
         if cap is None or not cap.isOpened():
             return HttpResponseBadRequest()
@@ -56,14 +56,14 @@ class Movies(JsonView):
         })
 
     def post_method(self):
-        path = self._get_data_or_error("path")
-        files = self._get_data("files")
-        folders = self._get_data('folders')
-        sessionName = self._get_data('sessionName', 'autoName')
+        path = self.get_data_or_error("path")
+        files = self.get_data("files")
+        folders = self.get_data('folders')
+        sessionName = self.get_data('sessionName', 'autoName')
         now = timezone.now()
 
         sessionName = "{}_{}_{}".format(sessionName, now.date(), now.time()).replace(":", "_").replace(".", "_")
-        sessionPath = self._get_data('sessionPath', os.path.join(pathUp(currentPath()), 'Sesje'))
+        sessionPath = self.get_data('sessionPath', os.path.join(pathUp(currentPath()), 'Sesje'))
         sessionPath = os.path.join(sessionPath, sessionName)
 
         imageFolder = FolderZObrazami.objects.create(nazwa=imagesFolderName)
@@ -190,8 +190,8 @@ class Movies(JsonView):
 @method_decorator(csrf_exempt, name='dispatch')
 class ProcessMovie(JsonView):
     def post_method(self):
-        movieId = self._get_data("movieId", False)
-        frames = self._get_data("frames")
+        movieId = self.get_data("movieId", False)
+        frames = self.get_data("frames")
         try:
             self.addToProcessedMovies(Film.objects.get(pk=movieId), frames)
         except:

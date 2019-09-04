@@ -17,9 +17,9 @@ from django.core.exceptions import ObjectDoesNotExist
 @method_decorator(csrf_exempt, name='dispatch')
 class NextMovie(JsonView):
     def get_method(self):
-        sessionId = self._get_data_or_error("sessionId")
+        sessionId = self.get_data_or_error("sessionId")
 
-        previousMovieId = self._get_data("previousMovieId", None)
+        previousMovieId = self.get_data("previousMovieId", None)
         if previousMovieId:
             previousMovie = Film.objects.get(pk=previousMovieId)
             statusToAdd = StatusFilmu.objects.get(status="Przypisano punkty")
@@ -56,8 +56,8 @@ class NextMovie(JsonView):
 @method_decorator(csrf_exempt, name='dispatch')
 class Frame(JsonView):
     def get_method(self):
-        movieId = self._get_data_or_error("movieId")
-        frameNr = self._get_data_or_error("frameNr")
+        movieId = self.get_data_or_error("movieId")
+        frameNr = self.get_data_or_error("frameNr")
         imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).getPath()
         wrapper = base64.b64encode(open(imagePath, 'rb').read()).decode('utf-8')
         response = HttpResponse(wrapper, content_type='image/png')
