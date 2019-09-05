@@ -208,7 +208,7 @@ class ParametryUczenia(models.Model):
     saveStep = models.IntegerField(default=500, blank=True, null=True)
     epochSize = models.IntegerField(default=50, blank=True, null=True)
     modelSieci = models.ForeignKey("Sieci", on_delete=models.CASCADE)
-    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True)  # pozostalosc po starym
+    zbiory = models.ForeignKey("ZbioryDanych", on_delete=models.CASCADE, blank=True, null=True)  # deprecated
     opisUczeniaJSON = models.TextField(default="", blank=True)
 
 

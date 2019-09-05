@@ -28,7 +28,7 @@ class DataAugmentationOrder(JsonView):
 
         isFlipVertical = self.get_data("isFlipVertical", 0)
         isFlipHorizontal = self.get_data("isFlipHorizontal", 0)
-        numberOfRandomCrops = int(self.get_data("numberOfRandomCrops", 0))
+        numberOfRandomCrops = int(self.get_data("numberOfRandomCrops", 1))
         toSaveFolderPath = self.get_data("toSaveFolderPath")
 
         session = Sesja.objects.get(pk=sessionId)
