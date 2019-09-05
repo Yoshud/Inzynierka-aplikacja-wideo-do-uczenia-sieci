@@ -6,7 +6,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.views import View
 from django.http import HttpResponseServerError
 
 from mainServer.stages.JsonView import JsonView
@@ -15,22 +14,24 @@ import json
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DataAugmentationOrder(View):
-    def get(self, request, **kwargs):
+class DataAugmentationOrder(JsonView):
+    def get_method(self):
         orders = ZlecenieAugmentacji.objects.filter(wTrakcie=False).order_by("pk")[0:20]
         ordersDict = [self.orderToDict(order) for order in orders]
         return JsonResponse({
             "orders": ordersDict,
         })
 
-    def post(self, request, **kwargs):
-        data = json.loads(request.read().decode('utf-8').replace("'", "\""))
-        sessionId = data["sessionId"]
+    def post_method(self):
+        sessionId = self.get_data_or_error("sessionId")
+        moviesId = self.get_data_or_error("moviesId")
+
+        isFlipVertical = self.get_data("isFlipVertical", 0)
+        isFlipHorizontal = self.get_data("isFlipHorizontal", 0)
+        numberOfRandomCrops = int(self.get_data("numberOfRandomCrops", 0))
+        toSaveFolderPath = self.get_data("toSaveFolderPath")
+
         session = Sesja.objects.get(pk=sessionId)
-        moviesId = data["moviesId"]
-        isFlipVertical = 1 if data["isFlipVertical"] else 0
-        isFlipHorizontal = 1 if data["isFlipHorizontal"] else 0
-        numberOfRandomCrops = int(data["numberOfRandomCrops"])
 
         if numberOfRandomCrops > 10:
             numberOfRandomCrops = 9
@@ -38,8 +39,8 @@ class DataAugmentationOrder(View):
             numberOfRandomCrops = 1
         dataAugmentationCode = 1000 + 100 * isFlipVertical + 10 * isFlipHorizontal + numberOfRandomCrops
 
-        if "toSaveFolderPath" in data:
-            dataAugmentationFolder = FolderZPrzygotowanymiObrazami(sciezka=data["toSaveFolderPath"])
+        if toSaveFolderPath is not None:
+            dataAugmentationFolder = FolderZPrzygotowanymiObrazami(sciezka=toSaveFolderPath)
         else:
             now = timezone.now()
             folderName = "dataAugmentation_{}_{}" \
@@ -90,7 +91,6 @@ class DataAugmentationOrder(View):
         noAugmentationOrderForFrame = (augmentationOrderCountForFrame == 0)
 
         if noAugmentationOrderForFrame:
-            # folder = FolderZPrzygotowanymiObrazami.objects.get_or_create(sciezka=dataAugmentationFolderPath)[0]
             ZlecenieAugmentacji.objects.create(
                 klatka=frame,
                 kodAugmentacji=dataAugmentationCode,

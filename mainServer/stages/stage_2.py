@@ -90,7 +90,7 @@ class FramePosition(View):
         if positions:
             return JsonResponse({"positions": positions, "frameId": frameId})
         else:
-            return JsonResponse({"frameId": Klatka.objects.get(film__pk=movieId, nr=frameNr).pk})
+            return JsonResponse({"frameId": frameId})
 
     def post(self, request, **kwargs):
         try:
