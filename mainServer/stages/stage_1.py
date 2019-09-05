@@ -134,8 +134,7 @@ class Movies(JsonView):
     def _groupImagesInMovies(cls, imageFileNames):
         imageFileNames.sort(key=cls._getSufixNumberFromFilename)
 
-        movies = []
-        movies.append([imageFileNames[0]])
+        movies = [[imageFileNames[0]], ]
         number = cls._getSufixNumberFromFilename(imageFileNames[0])
         for fileName in imageFileNames[1:]:
             nextImgNum = cls._getSufixNumberFromFilename(fileName)

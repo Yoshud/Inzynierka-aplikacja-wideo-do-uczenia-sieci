@@ -59,7 +59,11 @@ class Frame(JsonView):
         movieId = self.get_data_or_error("movieId")
         frameNr = self.get_data_or_error("frameNr")
         imagePath = Klatka.objects.get(film__pk=movieId, nr=frameNr).getPath()
-        wrapper = base64.b64encode(open(imagePath, 'rb').read()).decode('utf-8')
+        try:
+            wrapper = base64.b64encode(open(imagePath, 'rb').read()).decode('utf-8')
+        except FileNotFoundError as e:
+            raise Http404(str(e))
+
         response = HttpResponse(wrapper, content_type='image/png')
         return response
 
