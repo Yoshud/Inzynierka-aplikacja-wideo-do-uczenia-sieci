@@ -191,26 +191,26 @@ class AugmentationProcessStatus(JsonView):
     def get_method(self):
         sessionId = self.get_data_or_error("sessionId")
         allSessionMovies = Film.objects.filter(sesja__pk=sessionId, status__status="Przypisano punkty")
-        movieAugmentationStatuses = [self._movieAugmentationStatus(movie) for movie in allSessionMovies]
+        movieAugmentationStatuses = [self.movieAugmentationStatus(movie) for movie in allSessionMovies]
         return JsonResponse({"movies": movieAugmentationStatuses})
 
     @classmethod
-    def _movieAugmentationStatus(cls, movie):
+    def movieAugmentationStatus(cls, movie):
         frames = Klatka.objects.filter(film=movie, pozycja__status__status=interpolatedPositonStatus)
         frameOrderDict = defaultdict(lambda: defaultdict(list))
         for frame in frames:
-            cls.addFrame(frame, frameOrderDict)
-        a = {str(size): cls.movieProcessedStatus(framesDict, size) for size, framesDict in frameOrderDict.items()}
+            cls._addFrame(frame, frameOrderDict)
+        a = {str(size): cls._movieProcessedStatus(framesDict, size) for size, framesDict in frameOrderDict.items()}
         return a
 
     @staticmethod
-    def addFrame(frame, frameOrderDict):
+    def _addFrame(frame, frameOrderDict):
         orders = ZlecenieAugmentacji.objects.filter(klatka=frame)
         for order in orders:
             frameOrderDict[(order.oczekiwanyRozmiarX, order.oczekiwanyRozmiarY)][frame].append(order.kodAugmentacji)
 
     @classmethod
-    def movieProcessedStatus(cls, framesDict, size):
+    def _movieProcessedStatus(cls, framesDict, size):
         numberOfProcessedFrames = sum(
             [
                 int(cls.isFrameProcessed(frame, augmentationCodes, size))
