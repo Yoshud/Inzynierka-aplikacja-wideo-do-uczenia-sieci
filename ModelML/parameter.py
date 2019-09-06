@@ -1,7 +1,7 @@
 class Parameter:
     def __init__(self, name: str, type: str, min=-999999.0, max=999999.0, default=0.0):
         if type not in ["float", "str", "string", "int", "bool"]:
-            raise AttributeError("Zły typ, nie ma takiego typu")
+            raise AttributeError("This type isn't supported")
 
         if type == "default":
             default = False

@@ -2,7 +2,7 @@ from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
 
 
-class Model:
+class SimpleModelKeras:
     def __init__(self, dropout: float = None, img_size_x: int = None, img_size_y: int = None, channels: int = 3,
                  model=None):
         if model:
@@ -57,7 +57,7 @@ class Model:
         loaded_model = model_from_json(loaded_model_json)
         loaded_model.load_weights(model_file_name)
 
-        return Model(model=loaded_model)
+        return SimpleModelKeras(model=loaded_model)
 
     def _add_conv_layer(self, conv_network_dict: dict, max_pool: int = None, input_shape: list = None):
         if 'window' in conv_network_dict:

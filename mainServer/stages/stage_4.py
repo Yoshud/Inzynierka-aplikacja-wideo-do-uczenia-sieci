@@ -6,10 +6,10 @@ from django.views import View
 from typing import List
 import json
 
-from lossMethod import lossMethodDict
+from lossMethods import lossMethodDict
 from mainServer.stages.JsonView import JsonView
 from mainServer.stages.auxiliaryMethods import *
-from optimizerMethod import optimizeMethodDict
+from optimizerMethods import optimizeMethodDict
 
 
 @method_decorator(csrf_exempt, name='dispatch')

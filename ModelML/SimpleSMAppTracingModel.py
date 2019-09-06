@@ -6,9 +6,9 @@ from typing import List, Dict, Tuple
 from math import ceil
 
 from dataBatch import DataPicker
-from simpleModelKeras import Model
-from lossMethod import lossMethodDict, Norm2Loss
-from optimizerMethod import optimizeMethodDict
+from simpleModelKeras import SimpleModelKeras
+from lossMethods import lossMethodDict, Norm2Loss
+from optimizerMethods import optimizeMethodDict
 
 import json
 import shutil
@@ -35,7 +35,7 @@ class SimpleSMAppTracingModel(SplitMovieAppTracingModel):
                  save_step: int = None,
                  channels=3,
                  is_loading: bool = False,
-                 models: List[Model] = None,
+                 models: List[SimpleModelKeras] = None,
                  mean_and_std: List[Tuple[np.array, np.array]] = [],
                  input_size: Tuple[int, int] = None):
 
@@ -82,7 +82,7 @@ class SimpleSMAppTracingModel(SplitMovieAppTracingModel):
             self.mean_and_std = []
             for i in range(len(tags)):
                 model_network = deepcopy(network)
-                model = Model(dropout, img_size_x, img_size_y, channels)
+                model = SimpleModelKeras(dropout, img_size_x, img_size_y, channels)
                 model.add_conv_layers(model_network['conv_networks_dicts'])
                 model.add_classifier("FC", {"full_connected_network_dicts": model_network['full_connected_network_dicts']})
                 model.compile(
@@ -129,7 +129,7 @@ class SimpleSMAppTracingModel(SplitMovieAppTracingModel):
         models_dict = index["models"]
         input_size = index["input_size"]
         tags = list(models_dict.keys())
-        models = [Model.load(modelPath) for modelPath in models_dict.values()]
+        models = [SimpleModelKeras.load(modelPath) for modelPath in models_dict.values()]
 
         mean_and_std = [(np.load(path.joinpath(modelPath, "mean.npy")), (np.load(path.joinpath(modelPath, "std.npy"))))
                         for modelPath in models_dict.values()]
