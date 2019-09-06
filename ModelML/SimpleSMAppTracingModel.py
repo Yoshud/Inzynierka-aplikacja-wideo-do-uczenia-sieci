@@ -5,7 +5,7 @@ from SplitMovieAppTracingModel import SplitMovieAppTracingModel
 from typing import List, Dict, Tuple
 from math import ceil
 
-from dataBatchKeras import DataPicker
+from dataBatch import DataPicker
 from simpleModelKeras import Model
 from lossMethod import lossMethodDict, Norm2Loss
 from optimizerMethod import optimizeMethodDict
@@ -23,7 +23,7 @@ sys.stderr = log
 sys.stdout = log
 
 
-class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
+class SimpleSMAppTracingModel(SplitMovieAppTracingModel):
     def __init__(self, network: str = None, others: str = None, tags: List[str] = None,
                  img_size_x: int = None,
                  img_size_y: int = None,
@@ -121,7 +121,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
         shutil.copyfile("response.json", str(path / "parameters.json"))
 
     @classmethod
-    def load(cls, path: Path) -> "OldSimpleModelWithKeras":
+    def load(cls, path: Path) -> "SimpleSMAppTracingModel":
         json_file_path = path / "index.json"
         json_file = open(str(json_file_path), 'r')
         index = json.loads(json_file.read())
@@ -133,7 +133,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
 
         mean_and_std = [(np.load(path.joinpath(modelPath, "mean.npy")), (np.load(path.joinpath(modelPath, "std.npy"))))
                         for modelPath in models_dict.values()]
-        return OldSimpleModelWithKeras(
+        return SimpleSMAppTracingModel(
             is_loading=True,
             models=models,
             tags=tags,

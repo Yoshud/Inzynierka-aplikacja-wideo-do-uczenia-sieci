@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 
-from OldSimpleModelWithKeras import OldSimpleModelWithKeras
+from SimpleSMAppTracingModel import SimpleSMAppTracingModel
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
@@ -41,7 +41,7 @@ def processLearnOrder(data):
     model_path = data["model_path"]
     sets = data["sets"]
 
-    model = OldSimpleModelWithKeras(**parameters)
+    model = SimpleSMAppTracingModel(**parameters)
     model.fit(**sets)
     model.save(Path(model_path))
 

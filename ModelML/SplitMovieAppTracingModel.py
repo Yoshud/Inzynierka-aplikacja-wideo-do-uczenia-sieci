@@ -30,6 +30,7 @@ class SplitMovieAppTracingModel(ABC):
     def load(cls, path: Path) -> "SplitMovieAppTracingModel":
         pass
 
+    @abstractmethod
     def fit(self, train_data: List[dict], test_data: List[dict], validation_data: List[dict], *args, **kwargs):
         """data should be list of dicts like:
         {

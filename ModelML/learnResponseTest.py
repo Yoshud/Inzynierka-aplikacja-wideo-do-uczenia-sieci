@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 import json
 
-from OldSimpleModelWithKeras import OldSimpleModelWithKeras
+from SimpleSMAppTracingModel import SimpleSMAppTracingModel
 
 
 def checkForOrderToProcess():
@@ -31,7 +31,7 @@ def processLearnOrder(data):
     model_path = data["model_path"]
     sets = data["sets"]
 
-    model = OldSimpleModelWithKeras(**parameters)
+    model = SimpleSMAppTracingModel(**parameters)
     model.fit(**sets)
     model.save(Path(model_path))
 
