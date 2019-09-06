@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 
 
-class Get_next_batch:
+class GetNextBatch:
     def __init__(self, data, batch_size, full_random=True, start_point=0, randomize=True, without_loop=False):
         self._batch_size = batch_size
         self._full_random = full_random
@@ -54,7 +54,7 @@ class Get_next_batch:
             self._start_point = start_point
 
 
-class Data_picker:
+class DataPicker:
     def __init__(self, batch_size, epoch_size, training_iters, train_patches_with_positions,
                  test_patches_with_positions=list(), validate_patches_with_positions=list(),
                  transform: Optional[Callable]=None, randomize=True,
@@ -62,7 +62,6 @@ class Data_picker:
         self.transform = transform
         self._test_exist = len(test_patches_with_positions) > 0
         self._validation_exist = len(validate_patches_with_positions) > 0
-        # self.standarize_done = False
         self.mean = None
         self.std = None
 
@@ -74,29 +73,29 @@ class Data_picker:
 
         if randomize:
             if batch_size * training_iters > 2 * len(train_patches_with_positions):
-                self._load_method = Get_next_batch(train_patches_with_positions, size_of_batch, full_random=True).get
+                self._load_method = GetNextBatch(train_patches_with_positions, size_of_batch, full_random=True).get
             else:
                 self._load_method = \
-                    Get_next_batch(train_patches_with_positions, size_of_batch, full_random=False).get
+                    GetNextBatch(train_patches_with_positions, size_of_batch, full_random=False).get
                 
             if batch_size * training_iters > len(validate_patches_with_positions):
                 self._validation_load_method = \
-                    Get_next_batch(validate_patches_with_positions, size_of_batch_validation, full_random=True).get
+                    GetNextBatch(validate_patches_with_positions, size_of_batch_validation, full_random=True).get
             else:
                 self._validation_load_method = \
-                    Get_next_batch(validate_patches_with_positions, size_of_batch_validation, full_random=False).get
+                    GetNextBatch(validate_patches_with_positions, size_of_batch_validation, full_random=False).get
         
         else:
             self._load_method = \
-                Get_next_batch(train_patches_with_positions, size_of_batch, full_random=False, randomize=False).get
+                GetNextBatch(train_patches_with_positions, size_of_batch, full_random=False, randomize=False).get
             
             self._validation_load_method = \
-                Get_next_batch(
+                GetNextBatch(
                     validate_patches_with_positions, size_of_batch_validation, full_random=False, randomize=False
                 ).get
 
         self._test_load_method = \
-            Get_next_batch(test_patches_with_positions, size_of_batch_test, without_loop=True).get
+            GetNextBatch(test_patches_with_positions, size_of_batch_test, without_loop=True).get
 
     def load_test_data(self):
         if self._test_exist:

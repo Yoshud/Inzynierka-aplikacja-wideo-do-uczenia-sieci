@@ -1,10 +1,5 @@
 from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
-from dataBatchKeras import Data_picker
-from math import ceil, floor
-from keras.utils import plot_model
-
-from lossMethod import Norm2Loss
 
 
 class Model:
@@ -117,54 +112,3 @@ class Model:
 
         return self.model
 
-
-def test(model:Model, batch_size: int, data_picker: Data_picker, **kwargs):
-    is_loaded = True
-    results = list()
-
-    while is_loaded:
-        X, Y, is_loaded = data_picker.load_test_data()
-        results.extend(model.model.evaluate(X, Y, batch_size=batch_size))
-
-    results
-    return results
-
-
-def train(training_iters, save_step, epoch_size, img_size_x, img_size_y, dropout, conv_networks_dicts, batch_size,
-          full_connected_network_dicts, optimizer_type, loss_fun, data_picker: Data_picker, model_file: str,
-          epoch_per_one_data_laod: int = 2, channels=3, **kwargs):
-    model = Model(dropout, img_size_x, img_size_y, channels)
-
-    model.add_conv_layers(conv_networks_dicts)
-    model.add_classifier("FC", {"full_connected_network_dicts": full_connected_network_dicts})
-    model.compile(
-        loss=loss_fun,
-        optimizer=optimizer_type,
-        metrics=['mse', Norm2Loss().get],
-    )
-
-    plot_model(model, to_file=f'{model_file}.png')
-
-    number_of_epoch = max(1, ceil(training_iters / epoch_size))
-    epochs_to_save = max(1, floor(save_step / epoch_size))
-
-    for epoch in range(number_of_epoch):
-        if not epoch % epoch_per_one_data_laod:
-            X, Y = data_picker.load_data()
-            validation_data = data_picker.load_validation_data()
-
-        train_history = model.fit(
-            X, Y,
-            batch_size=batch_size,
-            validation_data=validation_data,
-            epochs=epoch+1,
-            initial_epoch=epoch,
-        )
-
-        if not epoch % epochs_to_save:
-            model.save(model_file, epoch)
-        train_history
-
-    model.save(model_file)
-
-    ##TODO: add testing model

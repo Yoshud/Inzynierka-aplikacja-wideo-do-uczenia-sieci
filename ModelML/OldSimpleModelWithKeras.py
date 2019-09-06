@@ -5,7 +5,7 @@ from SplitMovieAppTracingModel import SplitMovieAppTracingModel
 from typing import List, Dict, Tuple
 from math import ceil
 
-from dataBatchKeras import Data_picker
+from dataBatchKeras import DataPicker
 from simpleModelKeras import Model
 from lossMethod import lossMethodDict, Norm2Loss
 from optimizerMethod import optimizeMethodDict
@@ -92,7 +92,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
                 )
 
                 self.models.append(model)
-                self.mean_and_std.append(None)
+                self.mean_and_std.append((None, None))
 
     def save(self, path: Path):
         jsonFilePath = path / "index.json"
@@ -155,7 +155,7 @@ class OldSimpleModelWithKeras(SplitMovieAppTracingModel):
             model_train_data = [(el["path"], el["positions"][tag]) for el in train_data if el["positions"][tag] is not None]
             model_test_data = [(el["path"], el["positions"][tag]) for el in test_data if el["positions"][tag] is not None]
             model_validation_data = [(el["path"], el["positions"][tag]) for el in validation_data if el["positions"][tag] is not None]
-            data_picker = Data_picker(
+            data_picker = DataPicker(
                 self.batch_size, self.epoch_size, self.training_iters,
                 model_train_data, model_test_data, model_validation_data,
                 transform=lambda img: self._prepare_image(img, self.input_size)

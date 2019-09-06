@@ -1,21 +1,28 @@
 from tensorflow import train as tf
 import numpy as np
+from tensorflow.python.training.optimizer import Optimizer
+
 from parameter import Parameter
+
+
+class OptimizerBadParametersError(Exception):
+    pass
 
 
 class OptimizeMethod:
     def __init__(self, method, requirements: list, optional: list):
         self.requirements = requirements
         self.optional = optional
-        # if not isinstance(method, Optimizer):
-        #     raise TypeError
+        if not issubclass(method, Optimizer):
+            raise TypeError
+
         self.method = method
 
     def get(self, **params):
         full_list = np.array(self.requirements + self.optional)
         if (not np.in1d(params.keys(), full_list)) or (not np.in1d(self.requirements, params.keys())):
-            # raise
-            pass
+            raise OptimizerBadParametersError
+
         return self.method(**params)
 
 
