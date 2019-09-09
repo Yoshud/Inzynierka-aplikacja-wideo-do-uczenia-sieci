@@ -1,7 +1,10 @@
 import tensorflow as tf
 from abc import ABC, abstractmethod
 import numpy as np
-from parameter import Parameter
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
+from ModelML.parameter import Parameter
 
 
 class LossMethod(ABC):

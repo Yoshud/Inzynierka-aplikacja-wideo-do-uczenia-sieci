@@ -1,0 +1,14 @@
+#!/bin/bash
+cd "$(dirname "$0")/.."
+
+kill $SPLIT_MOVIE_MAIN_SERVER_PID
+
+kill $SPLIT_MOVIE_SPLIT_MOVIE_SERVICE_PID=$!
+
+kill $SPLIT_MOVIE_DATA_AUGMENTATION_SERVICE_PID_PID=$!
+
+kill  $SPLIT_MOVIE_LEARN_RESPONSE_SERVICE_PID
+
+cd -
+
+exit 0

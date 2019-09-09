@@ -2,7 +2,10 @@ from tensorflow import train as tf
 import numpy as np
 from tensorflow.python.training.optimizer import Optimizer
 
-from parameter import Parameter
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.abspath(__file__), '../..')))
+from ModelML.parameter import Parameter
 
 
 class OptimizerBadParametersError(Exception):
