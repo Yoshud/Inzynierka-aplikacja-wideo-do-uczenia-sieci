@@ -15,4 +15,4 @@ export SPLIT_MOVIE_LEARN_RESPONSE_SERVICE_PID=$!
 
 cd -
 
-exit 0
+return 0

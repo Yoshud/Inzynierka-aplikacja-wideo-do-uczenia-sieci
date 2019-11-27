@@ -7,4 +7,4 @@ docker run --name db_split_movie_app -p 18999:5432 -v $(pwd)/postgresData:/var/l
 
 cd -
 
-exit 0
+return 0

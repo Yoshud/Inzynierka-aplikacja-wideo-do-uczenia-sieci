@@ -1,7 +1,8 @@
 h5py
 graphviz
 django
-tensorflow
+tensorboard==1.11.0
+tensorflow==1.11.0
 numpy==1.15.0
 opencv-python
 requests
@@ -12,3 +13,6 @@ gphoto2==1.8.5
 Keras==2.2.4
 PTP==0.4.2
 pyusb
+tb-nightly
+tf-nightly
+tf-nightly-gpu
